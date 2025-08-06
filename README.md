@@ -127,14 +127,14 @@ jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v3
-    - name: Set up Go 1.17
-      uses: actions/setup-go@v2
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+    - name: Set up Go 1.24
+      uses: actions/setup-go@v5
       with:
-        go-version: 1.17
+        go-version: 1.24
       id: go
-    - uses: pre-commit/action@v2.0.3
+    - uses: pre-commit/action@v3.0.1
 ```
 
 ## Installation
@@ -144,7 +144,7 @@ The [pandoc](https://pandoc.org/) document converter utility is required to run 
 
 ## With Go
 
-With `go` 1.16 or higher:
+With `go` 1.24 or higher:
 
 ```sh
 go install github.com/mrtazz/checkmake/cmd/checkmake@latest

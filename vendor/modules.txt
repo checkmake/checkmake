@@ -1,20 +1,24 @@
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
-# github.com/docopt/docopt-go v0.0.0-20141128170934-854c423c8108
+# github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815
 ## explicit
 github.com/docopt/docopt-go
-# github.com/go-ini/ini v1.11.0
+# github.com/go-ini/ini v1.67.0
 ## explicit
 github.com/go-ini/ini
-# github.com/olekukonko/tablewriter v0.0.0-20150822215231-b9346ac189c5
-## explicit
+# github.com/mattn/go-runewidth v0.0.16
+## explicit; go 1.9
+github.com/mattn/go-runewidth
+# github.com/olekukonko/tablewriter v0.0.5
+## explicit; go 1.12
 github.com/olekukonko/tablewriter
 # github.com/pmezard/go-difflib v1.0.0
 ## explicit
 github.com/pmezard/go-difflib/difflib
-# github.com/smartystreets/goconvey v1.7.2
-## explicit; go 1.16
+# github.com/rivo/uniseg v0.4.7
+## explicit; go 1.18
+github.com/rivo/uniseg
 # github.com/stretchr/testify v1.1.4-0.20160615092844-d77da356e56a
 ## explicit
 github.com/stretchr/testify/assert

@@ -1,4 +1,4 @@
-FROM golang:1.13 as builder
+FROM golang:1.24 AS builder
 
 ARG BUILDER_NAME
 ARG BUILDER_EMAIL
@@ -10,7 +10,7 @@ WORKDIR /go/src/github.com/mrtazz/checkmake
 RUN make binaries
 RUN make test
 
-FROM alpine:3.11
+FROM alpine:3.22
 RUN apk add --no-cache make
 USER nobody
 
