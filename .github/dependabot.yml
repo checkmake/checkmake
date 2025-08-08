@@ -1,3 +1,5 @@
+# yaml-language-server: $jschema=https://json.schemastore.org/dependabot-2.0.json
+---
 # To get started with Dependabot version updates, you'll need to specify which
 # package ecosystems to update and where the package manifests are located.
 # Please see the documentation for all configuration options:
@@ -11,13 +13,19 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
-        groups:
+    groups:
       golang-dependencies:
         patterns:
           - "github.com/golang*"
-# Dependencies listed in .github/workflows/*.yml
+  # Dependencies listed in .github/workflows/*.yml
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-
+  # Dockerfile base images
+  - package-ecosystem: docker
+    directories:
+      - /
+      - buildenv/
+    schedule:
+      interval: weekly
