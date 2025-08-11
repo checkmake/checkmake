@@ -35,6 +35,7 @@ func (f *CustomFormatter) Format(violations rules.RuleViolationList) {
 
 	for _, val := range violations {
 		err := f.template.Execute(f.out, val)
+		f.out.Write([]byte("\n"))
 		if err != nil {
 			logger.Error(err.Error())
 		}

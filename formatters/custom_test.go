@@ -2,6 +2,7 @@ package formatters
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 	"text/template"
 
@@ -24,6 +25,7 @@ func TestCustomFormatter(t *testing.T) {
 	assert.Regexp(t, `../fixtures/missing_phony.make:21:minphony:Missing required phony target "all"`, out.String())
 	assert.Regexp(t, `../fixtures/missing_phony.make:21:minphony:Missing required phony target "test"`, out.String())
 	assert.Regexp(t, `../fixtures/missing_phony.make:16:phonydeclared:Target "all" should be declared PHONY.`, out.String())
+	assert.Equal(t, strings.Count(out.String(), "\n"), 3)
 }
 
 func TestCustomFormatterNewMethod(t *testing.T) {
