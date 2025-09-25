@@ -77,7 +77,7 @@ to denote an error in execution happening.
 
 # BUGS
 Please file bugs against the issue tracker:
-https://github.com/mrtazz/checkmake/issues
+https://github.com/checkmake/checkmake/issues
 
 # SEE ALSO
 make(1)
