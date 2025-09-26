@@ -36,7 +36,7 @@ endif
 BUILDER := $(shell echo "${BUILDER_NAME} <${EMAIL}>")
 
 PKG_RELEASE ?= 1
-PROJECT_URL := "https://github.com/mrtazz/$(NAME)"
+PROJECT_URL := "https://github.com/checkmake/$(NAME)"
 LDFLAGS := -X 'main.version=$(VERSION)' \
            -X 'main.buildTime=$(BUILDTIME)' \
            -X 'main.builder=$(BUILDER)' \
