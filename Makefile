@@ -14,6 +14,10 @@ GOVERSION := $(shell go version)
 BUILDTIME := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 BUILDDATE := $(shell date -u +"%B %d, %Y")
 
+ifeq ($(BUILD_GOOS),windows)
+	EXTENSION := .exe
+endif
+
 BUILD_GOOS ?= $(shell go env GOOS)
 BUILD_GOARCH ?= $(shell go env GOARCH)
 
@@ -140,8 +144,8 @@ deb: $(SOURCES)
 .PHONY: build-standalone
 build-standalone: all $(RELEASE_ARTIFACTS_DIR)
 	mv checkmake.1 $(RELEASE_ARTIFACTS_DIR)
-	mv checkmake $(RELEASE_ARTIFACTS_DIR)/checkmake-$(VERSION).$(BUILD_GOOS).$(BUILD_GOARCH)
-	cd $(RELEASE_ARTIFACTS_DIR) && shasum -a 256 checkmake-$(VERSION).$(BUILD_GOOS).$(BUILD_GOARCH) >> $(CHECKSUM_FILE)
+	mv checkmake $(RELEASE_ARTIFACTS_DIR)/checkmake-$(VERSION).$(BUILD_GOOS).$(BUILD_GOARCH)$(EXTENSION)
+	cd $(RELEASE_ARTIFACTS_DIR) && shasum -a 256 checkmake-$(VERSION).$(BUILD_GOOS).$(BUILD_GOARCH)$(EXTENSION) >> $(CHECKSUM_FILE)
 
 .PHONY: github-release
 github-release:
