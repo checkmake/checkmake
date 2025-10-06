@@ -17,11 +17,17 @@ BUILDDATE := $(shell date -u +"%B %d, %Y")
 BUILD_GOOS ?= $(shell go env GOOS)
 BUILD_GOARCH ?= $(shell go env GOARCH)
 
+ifeq ($(BUILD_GOOS),windows)
+	EXTENSION := .exe
+endif
+
 RELEASE_ARTIFACTS_DIR := .release_artifacts
 CHECKSUM_FILE := checksums.txt
 
 $(RELEASE_ARTIFACTS_DIR):
 	install -d $@
+
+CHECKMAKE_RELEASE_BINARY = "$(RELEASE_ARTIFACTS_DIR)/checkmake-$(VERSION).$(BUILD_GOOS).$(BUILD_GOARCH)$(EXTENSION)"
 
 BUILDER_NAME := $(if $(BUILDER_NAME),$(BUILDER_NAME),$(shell git config user.name))
 ifndef BUILDER_NAME
@@ -140,8 +146,8 @@ deb: $(SOURCES)
 .PHONY: build-standalone
 build-standalone: all $(RELEASE_ARTIFACTS_DIR)
 	mv checkmake.1 $(RELEASE_ARTIFACTS_DIR)
-	mv checkmake $(RELEASE_ARTIFACTS_DIR)/checkmake-$(VERSION).$(BUILD_GOOS).$(BUILD_GOARCH)
-	cd $(RELEASE_ARTIFACTS_DIR) && shasum -a 256 checkmake-$(VERSION).$(BUILD_GOOS).$(BUILD_GOARCH) >> $(CHECKSUM_FILE)
+	mv checkmake $(CHECKMAKE_RELEASE_BINARY)
+	shasum -a 256 $(CHECKMAKE_RELEASE_BINARY) >> $(RELEASE_ARTIFACTS_DIR)/$(CHECKSUM_FILE)
 
 .PHONY: github-release
 github-release:
