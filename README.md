@@ -69,7 +69,7 @@ repos:
     hooks:
     # Use this hook to let pre-commit build checkmake in its sandbox
     -   id: checkmake
-    # OR Use this hook to use a pre-installed checkmark executable
+    # OR Use this hook to use a pre-installed checkmake executable
     # -   id: checkmake-system
 ```
 
