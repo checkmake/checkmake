@@ -2,6 +2,8 @@
 package rules
 
 import (
+	"sort"
+
 	"github.com/checkmake/checkmake/parser"
 )
 
@@ -50,4 +52,19 @@ func RegisterRule(r Rule) {
 // GetRegisteredRules returns the internal ruleRegistry
 func GetRegisteredRules() RuleRegistry {
 	return ruleRegistry
+}
+
+// GetRulesSorted returns all registered rules in alphabetical order by name.
+func GetRulesSorted() []Rule {
+	keys := make([]string, 0, len(ruleRegistry))
+	for name := range ruleRegistry {
+		keys = append(keys, name)
+	}
+	sort.Strings(keys)
+
+	sorted := make([]Rule, 0, len(keys))
+	for _, name := range keys {
+		sorted = append(sorted, ruleRegistry[name])
+	}
+	return sorted
 }
