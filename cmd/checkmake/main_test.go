@@ -32,9 +32,9 @@ func TestListRules(t *testing.T) {
 
 	assert.Regexp(t, `\s+NAME\s+DESCRIPTION\s+`, out.String())
 	assert.Regexp(t, `phonydeclared\s+Every target without a body`, out.String())
-	assert.Regexp(t, `\s+needs to be marked PHONY`, out.String())
+	assert.Regexp(t, `\s+needs\s+to be marked PHONY`, out.String())
 
 	assert.Regexp(t, `minphony\s+Minimum required phony`, out.String())
-	assert.Regexp(t, `\s+targets must be present(.*)`, out.String())
+	assert.Regexp(t, `\s+must be present(.*)`, out.String())
 
 }
