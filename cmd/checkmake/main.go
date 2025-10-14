@@ -131,7 +131,7 @@ func parseArgsAndGetFormatter(args map[string]interface{}) (formatters.Formatter
 
 func listRules(w io.Writer) {
 	data := [][]string{}
-	for _, rule := range rules.GetRegisteredRules() {
+	for _, rule := range rules.GetRulesSorted() {
 		data = append(data, []string{rule.Name(), rule.Description()})
 	}
 
