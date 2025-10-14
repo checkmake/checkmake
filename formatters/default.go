@@ -2,11 +2,13 @@ package formatters
 
 import (
 	"io"
+	"log"
 	"os"
 	"strconv"
 
 	"github.com/checkmake/checkmake/rules"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 )
 
 // DefaultFormatter is the formatter used by default for CLI output
@@ -30,16 +32,23 @@ func (f *DefaultFormatter) Format(violations rules.RuleViolationList) {
 			strconv.Itoa(val.LineNumber)}
 	}
 
-	table := tablewriter.NewWriter(f.out)
+	table := tablewriter.NewTable(f.out,
+		tablewriter.WithRendition(tw.Rendition{
+			Borders: tw.BorderNone,
+			Symbols: tw.NewSymbols(tw.StyleNone),
+			Settings: tw.Settings{
+				Lines:      tw.LinesNone,
+				Separators: tw.SeparatorsNone,
+			},
+		}),
+		tablewriter.WithRowAutoWrap(tw.WrapNormal),
+		tablewriter.WithMaxWidth(80),
+	)
 
-	table.SetHeader([]string{"Rule", "Description", "File Name", "Line Number"})
+	table.Header("Rule", "Description", "File Name", "Line Number")
 
-	table.SetCenterSeparator(" ")
-	table.SetColumnSeparator(" ")
-	table.SetRowSeparator(" ")
-	table.SetBorder(false)
-	table.SetAutoWrapText(true)
-
-	table.AppendBulk(data)
+	if err := table.Bulk(data); err != nil {
+		log.Fatalf("Bulk append failed: %v", err)
+	}
 	table.Render()
 }

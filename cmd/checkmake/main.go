@@ -14,6 +14,7 @@ import (
 	"github.com/checkmake/checkmake/validator"
 	docopt "github.com/docopt/docopt-go"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 )
 
 var (
@@ -135,13 +136,22 @@ func listRules(w io.Writer) {
 		data = append(data, []string{rule.Name(), rule.Description()})
 	}
 
-	table := tablewriter.NewWriter(w)
-	table.SetHeader([]string{"Name", "Description"})
-	table.SetCenterSeparator(" ")
-	table.SetColumnSeparator(" ")
-	table.SetRowSeparator(" ")
-	table.SetAutoWrapText(true)
+	table := tablewriter.NewTable(w,
+		tablewriter.WithRendition(tw.Rendition{
+			Borders: tw.BorderNone,
+			Symbols: tw.NewSymbols(tw.StyleNone),
+			Settings: tw.Settings{
+				Lines:      tw.LinesNone,
+				Separators: tw.SeparatorsNone,
+			},
+		}),
+		tablewriter.WithRowAutoWrap(tw.WrapNormal),
+		tablewriter.WithMaxWidth(72),
+	)
+	table.Header("Name", "Description")
 
-	table.AppendBulk(data)
+	if err := table.Bulk(data); err != nil {
+		log.Fatalf("Bulk append failed: %v", err)
+	}
 	table.Render()
 }

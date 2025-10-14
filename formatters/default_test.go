@@ -19,7 +19,7 @@ func TestDefaultFormatter(t *testing.T) {
 	violations := validator.Validate(makefile, &config.Config{})
 	formatter.Format(violations)
 
-	assert.Regexp(t, `\s+RULE\s+DESCRIPTION\s+FILE NAME\s+LINE NUMBER\s+`, out.String())
-	assert.Regexp(t, `phonydeclared\s+Target "all" should be.+\s+16`, out.String())
-	assert.Regexp(t, `\s+declared PHONY`, out.String())
+	assert.Regexp(t, `(?s)\s+RULE\s+DESCRIPTION\s+FILE NAME\s+LINE NUMBER\s+`, out.String())
+	assert.Regexp(t, `(?s)phonydeclared\s+Target "all".+\s+16`, out.String())
+	assert.Regexp(t, `(?s)declared\s+PHONY`, out.String())
 }
