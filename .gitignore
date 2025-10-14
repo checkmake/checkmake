@@ -5,6 +5,7 @@ checkmake
 !cmd/checkmake*
 cover.html
 cover.out
+main
 profile.out
 *.rpm
 *.deb
