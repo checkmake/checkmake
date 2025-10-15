@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/checkmake/checkmake/config"
 	"github.com/checkmake/checkmake/formatters"
@@ -12,122 +13,109 @@ import (
 	"github.com/checkmake/checkmake/parser"
 	"github.com/checkmake/checkmake/rules"
 	"github.com/checkmake/checkmake/validator"
-	docopt "github.com/docopt/docopt-go"
 	"github.com/olekukonko/tablewriter"
 	"github.com/olekukonko/tablewriter/tw"
+	"github.com/spf13/cobra"
 )
 
 var (
-	usage = `checkmake.
-
-  Usage:
-  checkmake [options] [<makefile>...]
-  checkmake -h | --help
-  checkmake --version
-  checkmake --list-rules
-
-  Options:
-  -h --help               Show this screen.
-  --version               Show version.
-  --debug                 Enable debug mode
-  --config=<configPath>   Configuration file to read
-  --format=<format>       Output format as a Golang text/template template
-  --list-rules            List registered rules
-`
-
 	version   = ""
 	buildTime = ""
 	builder   = ""
 	goversion = ""
 
-	configPath = "checkmake.ini"
+	cfgPath string
+	debug   bool
+	format  string
 )
 
-func main() {
-
-	args, err := docopt.Parse(usage, nil, true,
-		fmt.Sprintf("%s %s built at %s by %s with %s",
-			"checkmake", version, buildTime, builder, goversion), false)
-	if err != nil {
-		log.Fatal(err)
-		os.Exit(1)
+func newRootCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:          "checkmake [flags] [makefile...]",
+		Short:        "Validate Makefiles for common issues",
+		Long:         "checkmake scans Makefiles and reports potential issues according to configurable rules.",
+		Args:         cobra.ArbitraryArgs,
+		SilenceUsage: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runCheckmake(args)
+		},
 	}
 
-	formatter, violations := parseArgsAndGetFormatter(args)
+	cmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug mode")
+	cmd.PersistentFlags().StringVar(&cfgPath, "config", "checkmake.ini", "Configuration file to read")
+	cmd.PersistentFlags().StringVar(&format, "format", "", "Output format as a Go text/template template")
 
-	if len(violations) > 0 {
-		formatter.Format(violations)
-	}
+	cmd.Version = fmt.Sprintf("%s %s built at %s by %s with %s",
+		"checkmake", version, buildTime, builder, goversion)
 
-	os.Exit(len(violations))
+	cmd.AddCommand(&cobra.Command{
+		Use:   "list-rules",
+		Short: "List registered rules",
+		Run: func(cmd *cobra.Command, args []string) {
+			listRules(cmd.OutOrStdout())
+		},
+	})
+
+	return cmd
 }
 
-func parseArgsAndGetFormatter(args map[string]interface{}) (formatters.Formatter,
-	rules.RuleViolationList) {
-	if args["--debug"] == true {
+func main() {
+	if err := newRootCmd().Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
+func runCheckmake(makefiles []string) error {
+	if debug {
 		logger.SetLogLevel(logger.DebugLevel)
 	}
 
-	if args["--list-rules"] == true {
-		listRules(os.Stdout)
-		os.Exit(0)
-	}
-
-	if args["--config"] != nil {
-		configPath = args["--config"].(string)
-	} else {
-		_, err := os.Stat(configPath)
+	if _, err := os.Stat(cfgPath); err != nil {
 		if os.IsNotExist(err) {
 			home := os.Getenv("HOME")
-			configPath = home + "/checkmake.ini"
+			cfgPath = filepath.Join(home, "checkmake.ini")
+		} else {
+			return fmt.Errorf("error accessing config file %q: %w", cfgPath, err)
 		}
 	}
 
-	cfg, cfgError := config.NewConfigFromFile(configPath)
-
+	cfg, cfgError := config.NewConfigFromFile(cfgPath)
 	if cfgError != nil {
-		logger.Info(fmt.Sprintf("Unable to parse config file %q, running with defaults",
-			configPath))
+		logger.Info(fmt.Sprintf("Unable to parse config file %q, running with defaults", cfgPath))
 	}
 
 	var violations rules.RuleViolationList
-	makefileArray := args["<makefile>"].([]string)
-	logger.Debug(fmt.Sprintf("Makefiles passed: %q",
-		makefileArray))
-	for _, mkf := range makefileArray {
-		logger.Info(fmt.Sprintf("Parsing file %q",
-			mkf))
-		makefile, parseError := parser.Parse(mkf)
-		if parseError != nil {
-			log.Fatal(parseError)
-			os.Exit(1)
+	for _, mkf := range makefiles {
+		logger.Info(fmt.Sprintf("Parsing file %q", mkf))
+		makefile, parseErr := parser.Parse(mkf)
+		if parseErr != nil {
+			return fmt.Errorf("failed to parse %q: %w", mkf, parseErr)
 		}
 		violations = append(violations, validator.Validate(makefile, cfg)...)
 	}
 
 	var formatter formatters.Formatter
+	var err error
 
-	if args["--format"] != nil {
-		format := args["--format"].(string)
-		var err error
+	if format != "" {
 		formatter, err = formatters.NewCustomFormatter(format)
-		if err != nil {
-			logger.Error(fmt.Sprintf("Unable to create formatter: %q", err.Error()))
-			os.Exit(1)
-		}
-	} else if format, formatErr := cfg.GetConfigValue("format"); formatErr == nil {
-		var err error
-		formatter, err = formatters.NewCustomFormatter(format)
-		if err != nil {
-			logger.Error(fmt.Sprintf("Unable to create formatter: %q", err.Error()))
-			os.Exit(1)
-		}
-
+	} else if f, ferr := cfg.GetConfigValue("format"); ferr == nil {
+		formatter, err = formatters.NewCustomFormatter(f)
 	} else {
 		formatter = formatters.NewDefaultFormatter()
 	}
+	if err != nil {
+		logger.Error(fmt.Sprintf("Unable to create formatter: %q", err.Error()))
+		return err
+	}
 
-	return formatter, violations
+	// Output
+	if len(violations) > 0 {
+		formatter.Format(violations)
+		return fmt.Errorf("violations found (%d)", len(violations))
+	}
+
+	return nil
 }
 
 func listRules(w io.Writer) {

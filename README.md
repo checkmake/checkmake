@@ -18,31 +18,34 @@ not do what you want it to.
 % checkmake Makefile foo.mk bar.mk baz.mk
 
 % checkmake --help
-checkmake.
+checkmake scans Makefiles and reports potential issues according to configurable rules.
 
 Usage:
-checkmake [--debug|--config=<configPath>] <makefile>...
-checkmake -h | --help
-checkmake --version
+  checkmake [flags] [makefile...]
+  checkmake [command]
 
-Options:
--h --help               Show this screen.
---version               Show version.
---debug                 Enable debug mode
---config=<configPath>   Configuration file to read
---list-rules            List registered rules
+Available Commands:
+  completion  Generate the autocompletion script for the specified shell
+  help        Help about any command
+  list-rules  List registered rules
+
+Flags:
+      --config string   Configuration file to read (default "checkmake.ini")
+      --debug           Enable debug mode
+      --format string   Output format as a Go text/template template
+  -h, --help            help for checkmake
+  -v, --version         version for checkmake
+
+Use "checkmake [command] --help" for more information about a command.
 
 % checkmake fixtures/missing_phony.make
-
-      RULE                 DESCRIPTION             LINE NUMBER
-
-  minphony        Missing required phony target    0
+      RULE                 DESCRIPTION                      FILE NAME            LINE NUMBER
+  minphony        Missing required phony target    fixtures/missing_phony.make   21
                   "all"
-  minphony        Missing required phony target    0
+  minphony        Missing required phony target    fixtures/missing_phony.make   21
                   "test"
-  phonydeclared   Target "all" should be           18
+  phonydeclared   Target "all" should be           fixtures/missing_phony.make   16
                   declared PHONY.
-
 ```
 
 ## Docker usage
