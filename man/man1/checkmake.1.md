@@ -15,25 +15,27 @@ date: REPLACE_DATE
 `checkmake` is a linter for Makefiles. It allows for a set of
 configurable rules being run against a Makefile or a set of `\*.mk` files.
 
-# OPTIONS
+# FLAGS
 
 **-h**, **--help**
-:    Show a friendly help message.
+:    Show this help message and exit.
 
 **--version**
-:    Show version.
+:    Show version information.
 
 **--debug**
-:    Enable debug mode
+:    Enable debug output for troubleshooting.
 
-**--config=\<configPath\>**
-:    Configuration file to read
+**--config** *path*
+:    Specify the configuration file to read (default: `checkmake.ini`).
 
-**--format=\<format\>**
-:    Output format as a Golang text/template template
+**--format** *format*
+:    Set a custom output format using a Go `text/template` syntax.
 
-**--list-rules**
-:    List registered rules
+# SUBCOMMANDS
+
+**list-rules**
+:    Display all registered rules and their descriptions.
 
 # CONFIGURATION
 By default checkmake looks for a `checkmake.ini` file in the same
@@ -65,15 +67,16 @@ minphony.required
 
 
 # EXIT STATUS
-checkmake exits with the following status:
+`checkmake` exits with the following status codes:
 
 ```
- 0:   checkmake ran successfully and found 0 violations
->1:   checkmake found the number of violations reflected by the exit status
+ 0:   checkmake ran successfully and found no rule violations
+ 1:   checkmake found one or more rule violations, or encountered an execution error
 ```
 
-In addition to checkmake having found 1 violation, exit status 1 is also used
-to denote an error in execution happening.
+Unlike previous versions, `checkmake` no longer exits with the exact number of
+violations. Any nonzero exit status now indicates that either violations were
+detected or an error occurred during execution.
 
 # BUGS
 Please file bugs against the issue tracker:
