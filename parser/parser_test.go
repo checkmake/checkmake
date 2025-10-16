@@ -1,13 +1,17 @@
 package parser
 
 import (
+	"bytes"
+	"log"
+	"os"
 	"testing"
 
+	"github.com/checkmake/checkmake/logger"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseSimpleMakefile(t *testing.T) {
-
 	ret, err := Parse("../fixtures/simple.make")
 
 	assert.Equal(t, err, nil)
@@ -54,4 +58,22 @@ func TestParseSimpleMakefile(t *testing.T) {
 	assert.Equal(t, ret.Variables[3].SimplyExpanded, false)
 	assert.Equal(t, ret.Variables[3].SpecialVariable, true)
 	assert.Equal(t, ret.Variables[3].FileName, "../fixtures/simple.make")
+}
+
+func TestParse_IgnoresEmptyLinesInDebug(t *testing.T) {
+	var buf bytes.Buffer
+	logger.SetLogLevel(logger.DebugLevel)
+	log.SetOutput(&buf)
+	defer log.SetOutput(os.Stderr)
+
+	_, err := Parse("../fixtures/unknown_lines.make")
+	require.NoError(t, err)
+
+	output := buf.String()
+
+	assert.Contains(t, output, "Unable to match line 'thisisnotarule'",
+		"non-empty invalid lines should trigger a debug message")
+
+	assert.NotContains(t, output, "Unable to match line ''",
+		"empty lines should not trigger debug messages")
 }
