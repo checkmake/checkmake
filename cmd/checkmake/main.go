@@ -57,20 +57,15 @@ func newRootCmd() *cobra.Command {
 		Use:   "list-rules",
 		Short: "List registered rules",
 		Run: func(cmd *cobra.Command, args []string) {
-			listRules(cmd.OutOrStdout())
+			cfg := loadConfig()
+			listRules(cmd.OutOrStdout(), cfg)
 		},
 	})
 
 	return cmd
 }
 
-func main() {
-	if err := newRootCmd().Execute(); err != nil {
-		os.Exit(1)
-	}
-}
-
-func runCheckmake(makefiles []string) error {
+func loadConfig() *config.Config {
 	if debug {
 		logger.SetLogLevel(logger.DebugLevel)
 	}
@@ -80,25 +75,38 @@ func runCheckmake(makefiles []string) error {
 			home := os.Getenv("HOME")
 			cfgPath = filepath.Join(home, "checkmake.ini")
 		} else {
-			return fmt.Errorf("error accessing config file %q: %w", cfgPath, err)
+			logger.Error(fmt.Sprintf("error accessing config file %q: %v", cfgPath, err))
+			return &config.Config{}
 		}
 	}
 
 	cfg, cfgError := config.NewConfigFromFile(cfgPath)
 	if cfgError != nil {
-		logger.Info(fmt.Sprintf("Unable to parse config file %q, running with defaults", cfgPath))
-	} else {
-		logger.Debug(fmt.Sprintf("Using configuration file: %q", cfgPath))
-		if debug {
-			if iniFile := cfg.Ini(); iniFile != nil {
-				var buf bytes.Buffer
-				if _, err := iniFile.WriteTo(&buf); err == nil {
-					logger.Debug(fmt.Sprintf("Parsed configuration:\n%s", buf.String()))
-				}
+		logger.Error(fmt.Sprintf("Unable to parse config file %q, running with defaults", cfgPath))
+		return &config.Config{}
+	}
+
+	logger.Debug(fmt.Sprintf("Using configuration file: %q", cfgPath))
+	if debug {
+		if iniFile := cfg.Ini(); iniFile != nil {
+			var buf bytes.Buffer
+			if _, err := iniFile.WriteTo(&buf); err == nil {
+				logger.Debug(fmt.Sprintf("Parsed configuration:\n%s", buf.String()))
 			}
 		}
 	}
 
+	return cfg
+}
+
+func main() {
+	if err := newRootCmd().Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
+func runCheckmake(makefiles []string) error {
+	cfg := loadConfig()
 	logger.Debug(fmt.Sprintf("Makefiles passed: %q", makefiles))
 
 	var violations rules.RuleViolationList
@@ -135,10 +143,11 @@ func runCheckmake(makefiles []string) error {
 	return nil
 }
 
-func listRules(w io.Writer) {
+func listRules(w io.Writer, cfg *config.Config) {
 	data := [][]string{}
 	for _, rule := range rules.GetRulesSorted() {
-		data = append(data, []string{rule.Name(), rule.Description()})
+		cfgForRule := cfg.GetRuleConfig(rule.Name())
+		data = append(data, []string{rule.Name(), rule.Description(cfgForRule)})
 	}
 
 	table := tablewriter.NewTable(w,

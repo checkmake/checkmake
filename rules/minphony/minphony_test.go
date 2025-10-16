@@ -74,9 +74,9 @@ func TestMinPhony_new(t *testing.T) {
 
 	assert.Equal(t, []string{"oh", "hai"}, mp.required)
 	assert.Equal(t, "minphony", mp.Name())
-	expected_desc := fmt.Sprintf("Minimum required phony targets must be present (%s)", strings.Join(mp.required, ","))
+	expected_desc := fmt.Sprintf("Minimum required phony targets must be present (%s).", strings.Join(mp.required, ","))
 
-	assert.Equal(t, expected_desc, mp.Description())
+	assert.Equal(t, expected_desc, mp.Description(nil))
 }
 
 func TestMinPhony_Run(t *testing.T) {

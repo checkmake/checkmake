@@ -32,7 +32,14 @@ func (m *MaxBodyLength) Name() string {
 }
 
 // Description returns the description of the rule
-func (m *MaxBodyLength) Description() string {
+func (m *MaxBodyLength) Description(cfg rules.RuleConfig) string {
+	if cfg != nil {
+		if confLength, ok := cfg["maxBodyLength"]; ok {
+			if i, err := strconv.Atoi(confLength); err == nil {
+				return fmt.Sprintf("Target bodies should be kept simple and short (no more than %d lines).", i)
+			}
+		}
+	}
 	return fmt.Sprintf("Target bodies should be kept simple and short (no more than %d lines).", maxBodyLength)
 }
 

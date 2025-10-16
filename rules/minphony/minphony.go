@@ -33,8 +33,13 @@ func (r *MinPhony) Name() string {
 }
 
 // Description returns the description of the rule
-func (r *MinPhony) Description() string {
-	return fmt.Sprintf("Minimum required phony targets must be present (%s)", strings.Join(r.required, ","))
+func (r *MinPhony) Description(cfg rules.RuleConfig) string {
+	if cfg != nil {
+		if req, ok := cfg["required"]; ok && req != "" {
+			return fmt.Sprintf("Minimum required phony targets must be present (%s).", req)
+		}
+	}
+	return fmt.Sprintf("Minimum required phony targets must be present (%s).", strings.Join(r.required, ","))
 }
 
 // Run executes the rule logic

@@ -32,7 +32,7 @@ func (r *Timestampexpanded) Name() string {
 }
 
 // Description returns the description of the rule
-func (r *Timestampexpanded) Description() string {
+func (r *Timestampexpanded) Description(cfg rules.RuleConfig) string {
 	return "timestamp variables should be simply expanded"
 }
 
