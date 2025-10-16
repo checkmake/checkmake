@@ -74,3 +74,8 @@ func (c *Config) GetConfigValue(keyName string) (value string, err error) {
 
 	return "", fmt.Errorf("config has no default section")
 }
+
+// Ini returns the underlying ini.File instance for debugging or advanced inspection.
+func (c *Config) Ini() *ini.File {
+	return c.iniFile
+}
