@@ -24,7 +24,7 @@ func TestVersionIsNotSimplyExpanded(t *testing.T) {
 
 	assert.Equal(t, 1, len(ret))
 	assert.Equal(t, "timestamp variables should be simply expanded",
-		rule.Description())
+		rule.Description(nil))
 	for i := range ret {
 		assert.Equal(t, "timestamp-expanded.mk", ret[i].FileName)
 	}

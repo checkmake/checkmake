@@ -149,3 +149,21 @@ func TestCheckmake_DebugLogsMakefilesPassed(t *testing.T) {
 	assert.Contains(t, logs, "simple.make")
 	assert.Contains(t, logs, "missing_phony.make")
 }
+
+func TestCheckmake_ListRules_UsesConfig(t *testing.T) {
+	cmd := newRootCmd()
+	cmd.SetArgs([]string{"--config", "../../fixtures/custom_rules.ini", "list-rules"})
+
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+
+	err := cmd.Execute()
+	require.NoError(t, err, "list-rules should run successfully with config")
+
+	output := buf.String()
+	t.Logf("list-rules output:\n%s", output)
+
+	assert.Regexp(t, `3\s+lines`, output, "custom maxBodyLength from config should appear in output")
+	assert.Regexp(t, `foo,\s*bar`, output, "custom required phonies from config should appear in output")
+}

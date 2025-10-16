@@ -24,7 +24,7 @@ func (r *Phonydeclared) Name() string {
 }
 
 // Description returns the description of the rule
-func (r *Phonydeclared) Description() string {
+func (r *Phonydeclared) Description(cfg rules.RuleConfig) string {
 	return "Every target without a body needs to be marked PHONY"
 }
 

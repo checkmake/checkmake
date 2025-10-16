@@ -7,10 +7,18 @@ import (
 	"github.com/checkmake/checkmake/parser"
 )
 
-// Rule is the type of a rule function
+// Rule defines the interface that all validation rules must implement.
+//
+// Each rule provides:
+//   - Name(): a unique identifier string for the rule.
+//   - Description(cfg RuleConfig): a human-readable explanation of what the rule checks for.
+//     Implementations should adapt the description based on the provided configuration,
+//     but must remain safe to call with a nil config (using default values).
+//   - Run(makefile, cfg): performs the actual validation on the parsed Makefile,
+//     returning a list of any violations found.
 type Rule interface {
 	Name() string
-	Description() string
+	Description(cfg RuleConfig) string
 	Run(parser.Makefile, RuleConfig) RuleViolationList
 }
 
