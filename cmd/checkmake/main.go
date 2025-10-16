@@ -88,6 +88,8 @@ func runCheckmake(makefiles []string) error {
 		logger.Info(fmt.Sprintf("Unable to parse config file %q, running with defaults", cfgPath))
 	}
 
+	logger.Debug(fmt.Sprintf("Makefiles passed: %q", makefiles))
+
 	var violations rules.RuleViolationList
 	for _, mkf := range makefiles {
 		logger.Info(fmt.Sprintf("Parsing file %q", mkf))
