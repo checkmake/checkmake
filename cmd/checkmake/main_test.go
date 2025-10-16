@@ -4,6 +4,7 @@ package main
 import (
 	"bytes"
 	"io"
+	"log"
 	"os"
 	"testing"
 
@@ -120,4 +121,31 @@ func TestCheckmake_WithCustomFormatFlag(t *testing.T) {
 	// There are three expected rules in missing_phony.make: phonydeclared and minphony twice
 	assert.Contains(t, out, "phonydeclared on 16")
 	assert.Contains(t, out, "minphony on 21")
+}
+
+func TestCheckmake_DebugLogsMakefilesPassed(t *testing.T) {
+	var logBuf bytes.Buffer
+
+	originalLoggerOutput := log.Writer()
+	log.SetOutput(&logBuf)
+
+	defer log.SetOutput(originalLoggerOutput)
+
+	cmd := newRootCmd()
+	cmd.SetArgs([]string{
+		"--debug",
+		"../../fixtures/simple.make",
+		"../../fixtures/missing_phony.make",
+	})
+	_ = cmd.Execute()
+
+	logs := logBuf.String()
+	t.Logf("debug output:\n%s", logs)
+
+	// The --debug flag should trigger the "Makefiles passed" log.
+	require.Contains(t, logs, "Makefiles passed:", "debug output should list the Makefiles provided")
+
+	// And it should contain both files.
+	assert.Contains(t, logs, "simple.make")
+	assert.Contains(t, logs, "missing_phony.make")
 }
