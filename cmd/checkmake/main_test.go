@@ -34,6 +34,18 @@ func captureOutput(f func()) string {
 	return buf.String()
 }
 
+func TestCheckmake_NoArgsShowsHelp(t *testing.T) {
+	out := captureOutput(func() {
+		cmd := newRootCmd()
+		cmd.SetArgs([]string{}) // no args
+		err := cmd.Execute()
+		require.NoError(t, err, "command without args should not fail")
+	})
+
+	assert.Contains(t, out, "Usage:", "expected help output to be shown")
+	assert.Contains(t, out, "checkmake [flags]", "should display root usage line")
+}
+
 func TestCheckmake_RunWithSimpleMakefile(t *testing.T) {
 	t.Parallel()
 	cmd := newRootCmd()
