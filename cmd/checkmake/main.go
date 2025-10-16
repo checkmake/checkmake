@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -86,6 +87,16 @@ func runCheckmake(makefiles []string) error {
 	cfg, cfgError := config.NewConfigFromFile(cfgPath)
 	if cfgError != nil {
 		logger.Info(fmt.Sprintf("Unable to parse config file %q, running with defaults", cfgPath))
+	} else {
+		logger.Debug(fmt.Sprintf("Using configuration file: %q", cfgPath))
+		if debug {
+			if iniFile := cfg.Ini(); iniFile != nil {
+				var buf bytes.Buffer
+				if _, err := iniFile.WriteTo(&buf); err == nil {
+					logger.Debug(fmt.Sprintf("Parsed configuration:\n%s", buf.String()))
+				}
+			}
+		}
 	}
 
 	logger.Debug(fmt.Sprintf("Makefiles passed: %q", makefiles))
