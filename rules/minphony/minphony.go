@@ -42,43 +42,65 @@ func (r *MinPhony) Description(cfg rules.RuleConfig) string {
 	return fmt.Sprintf("Minimum required phony targets must be present (%s).", strings.Join(r.required, ","))
 }
 
-// Run executes the rule logic
+// Run executes the rule logic.
+// It ensures all required phony targets are both defined as rules
+// and declared as PHONY. Missing or undeclared targets trigger violations.
 func (r *MinPhony) Run(makefile parser.Makefile, config rules.RuleConfig) rules.RuleViolationList {
 	ret := rules.RuleViolationList{}
 
+	// Load configured required targets, if any
+	required := r.required
 	if confRequired, ok := config["required"]; ok {
 		// special case:
 		// empty string means disable the rule.
 		if confRequired == "" {
-			r.required = []string{}
+			required = []string{}
 		} else {
-
-			r.required = strings.Split(confRequired, ",")
+			required = strings.Split(confRequired, ",")
 		}
-		for i := range r.required {
-			r.required[i] = strings.TrimSpace(r.required[i])
+		for i := range required {
+			required[i] = strings.TrimSpace(required[i])
 		}
-
 	}
-	ruleIndex := make(map[string]bool)
-	ruleLineNumber := 0
+
+	// Collect all declared phony targets
+	declaredPhony := map[string]bool{}
+	phonyLine := 0
 	for _, variable := range makefile.Variables {
 		if variable.Name == "PHONY" {
-			ruleLineNumber = variable.LineNumber - 1
-			for _, phony := range strings.Split(variable.Assignment, " ") {
-				ruleIndex[phony] = true
+			phonyLine = variable.LineNumber - 1
+			for _, phony := range strings.Fields(variable.Assignment) {
+				declaredPhony[phony] = true
 			}
 		}
 	}
 
-	for _, reqRule := range r.required {
-		_, ok := ruleIndex[reqRule]
-		if !ok {
+	// Collect all defined targets in the Makefile
+	definedTargets := map[string]bool{}
+	for _, rule := range makefile.Rules {
+		definedTargets[rule.Target] = true
+	}
+
+	// Check for required targets being both defined and declared PHONY
+	for _, req := range required {
+		// Check if the required target is defined at all
+		if !definedTargets[req] {
 			ret = append(ret, rules.RuleViolation{
-				Rule:       "minphony",
-				Violation:  fmt.Sprintf("Missing required phony target %q", reqRule),
+				Rule:       r.Name(),
+				Violation:  fmt.Sprintf("Required target %q is missing from the Makefile.", req),
 				FileName:   makefile.FileName,
-				LineNumber: ruleLineNumber,
+				LineNumber: phonyLine,
+			})
+			continue
+		}
+
+		// Check if it’s declared PHONY
+		if !declaredPhony[req] {
+			ret = append(ret, rules.RuleViolation{
+				Rule:       r.Name(),
+				Violation:  fmt.Sprintf("Required target %q must be declared PHONY.", req),
+				FileName:   makefile.FileName,
+				LineNumber: phonyLine,
 			})
 		}
 	}

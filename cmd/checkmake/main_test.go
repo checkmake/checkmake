@@ -76,8 +76,8 @@ func TestCheckmake_RunWithViolations(t *testing.T) {
 	require.Error(t, err, "expected command to fail for a makefile with violations")
 
 	// matching full sentences with table output is complex, search partially
-	assert.Contains(t, out, "Missing required", "should mention violation description")
-	assert.Contains(t, out, "phony target", "should mention target type")
+	assert.Contains(t, out, "Required target", "should mention violation description")
+	assert.Contains(t, out, "declared PHONY.", "should mention target type")
 	assert.Contains(t, out, "phonydeclared", "should mention phonydeclared error")
 }
 
@@ -167,3 +167,34 @@ func TestCheckmake_ListRules_UsesConfig(t *testing.T) {
 	assert.Regexp(t, `3\s+lines`, output, "custom maxBodyLength from config should appear in output")
 	assert.Regexp(t, `foo,\s*bar`, output, "custom required phonies from config should appear in output")
 }
+
+func TestCheckmake_MinPhonyPassesWhenAllTargetsExist(t *testing.T) {
+	cmd := newRootCmd()
+	cmd.SilenceErrors = true
+	cmd.SetArgs([]string{"../../fixtures/all_targets_present.make"})
+
+	var err error
+	_ = captureOutput(func() {
+		err = cmd.Execute()
+	})
+
+	require.NoError(t, err, "expected no violations when all required targets exist and are PHONY")
+}
+
+func TestCheckmake_MinPhonyDetectsMissingTargets(t *testing.T) {
+	cmd := newRootCmd()
+	cmd.SilenceErrors = true
+	cmd.SetArgs([]string{"../../fixtures/missing_targets.make"})
+
+	var err error
+	out := captureOutput(func() {
+		err = cmd.Execute()
+	})
+
+	require.Error(t, err, "expected command to fail when PHONY declares missing targets")
+
+	assert.Contains(t, out, "Required target", "should mention missing target violation")
+	assert.Contains(t, out, "from the Makefile", "should identify missing targets")
+	assert.Contains(t, out, "minphony", "should include rule name in output")
+}
+

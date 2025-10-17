@@ -28,19 +28,19 @@ var mpRunTests = []struct {
 		vl: rules.RuleViolationList{
 			rules.RuleViolation{
 				Rule:       "minphony",
-				Violation:  "Missing required phony target \"kleen\"",
+				Violation:  "Required target \"kleen\" is missing from the Makefile.",
 				FileName:   "green-eggs.mk",
 				LineNumber: -1,
 			},
 			rules.RuleViolation{
 				Rule:       "minphony",
-				Violation:  "Missing required phony target \"awl\"",
+				Violation:  "Required target \"awl\" is missing from the Makefile.",
 				FileName:   "green-eggs.mk",
 				LineNumber: -1,
 			},
 			rules.RuleViolation{
 				Rule:       "minphony",
-				Violation:  "Missing required phony target \"toast\"",
+				Violation:  "Required target \"toast\" is missing from the Makefile.",
 				FileName:   "green-eggs.mk",
 				LineNumber: -1,
 			},
@@ -61,7 +61,7 @@ var mpRunTests = []struct {
 		vl: rules.RuleViolationList{
 			rules.RuleViolation{
 				Rule:       "minphony",
-				Violation:  "Missing required phony target \"toast\"",
+				Violation:  "Required target \"toast\" is missing from the Makefile.",
 				FileName:   "kleen.mk",
 				LineNumber: -1,
 			},
@@ -102,13 +102,13 @@ func TestMinPhony_RunWithConfig(t *testing.T) {
 	vl := rules.RuleViolationList{
 		rules.RuleViolation{
 			Rule:       "minphony",
-			Violation:  "Missing required phony target \"foo\"",
+			Violation:  "Required target \"foo\" is missing from the Makefile.",
 			FileName:   "test.mk",
 			LineNumber: -1,
 		},
 		rules.RuleViolation{
 			Rule:       "minphony",
-			Violation:  "Missing required phony target \"bar\"",
+			Violation:  "Required target \"bar\" is missing from the Makefile.",
 			FileName:   "test.mk",
 			LineNumber: -1,
 		},
@@ -122,4 +122,25 @@ func TestMinPhony_RunWithConfig(t *testing.T) {
 	vl = rules.RuleViolationList{}
 
 	assert.Equal(t, vl, mp.Run(mf, cfg))
+}
+
+func TestMinPhony_MissingPhonyDeclaration(t *testing.T) {
+	makefile := parser.Makefile{
+		FileName: "missing-phony.mk",
+		Rules: []parser.Rule{
+			{Target: "all"},
+			{Target: "clean"},
+			{Target: "test"},
+		},
+		Variables: []parser.Variable{
+			{Name: "PHONY", Assignment: "all"}, // only "all" declared
+		},
+	}
+
+	mp := &MinPhony{required: []string{"all", "clean", "test"}}
+	ret := mp.Run(makefile, rules.RuleConfig{})
+
+	assert.Len(t, ret, 2, "expected two missing PHONY declaration violations")
+	assert.Equal(t, "Required target \"clean\" must be declared PHONY.", ret[0].Violation)
+	assert.Equal(t, "Required target \"test\" must be declared PHONY.", ret[1].Violation)
 }
