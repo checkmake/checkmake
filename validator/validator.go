@@ -16,11 +16,11 @@ import (
 	_ "github.com/checkmake/checkmake/rules/minphony"
 	_ "github.com/checkmake/checkmake/rules/phonydeclared"
 	_ "github.com/checkmake/checkmake/rules/timestampexpanded"
+	_ "github.com/checkmake/checkmake/rules/uniquetargets"
 )
 
 // Validate let's you validate a passed in Makefile with the provided config
 func Validate(makefile parser.Makefile, cfg *config.Config) (ret rules.RuleViolationList) {
-
 	rules := rules.GetRegisteredRules()
 
 	for name, rule := range rules {
