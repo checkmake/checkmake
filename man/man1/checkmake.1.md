@@ -37,6 +37,31 @@ configurable rules being run against a Makefile or a set of `\*.mk` files.
 **list-rules**
 :    Display all registered rules and their descriptions.
 
+# RULES
+
+ **maxbodylength**
+ :   Target bodies should be kept simple and short
+     (no more than 8 lines by default).
+      This is number is configurable (see below).
+
+ **minphony**
+ :   A minimum list of  required phony targets must be present
+     By default these are all,clean,and test.
+     This list is configurable (see below).
+
+ **phonydeclared**
+ :   Every target without a body needs
+     to be marked PHONY
+
+ **timestampexpanded**
+ :   timestamp variables should be
+     simply expanded
+
+ **uniquetargets**
+ :   Targets should be uniquely defined because
+     duplicates can cause recipe overrides or
+     unintended merges.
+
 # CONFIGURATION
 By default checkmake looks for a `checkmake.ini` file in the same
 folder it's executed in, and then as fallback in `~/checkmake.ini`.
