@@ -82,7 +82,7 @@ func loadConfig() *config.Config {
 
 	cfg, cfgError := config.NewConfigFromFile(cfgPath)
 	if cfgError != nil {
-		logger.Error(fmt.Sprintf("Unable to parse config file %q, running with defaults", cfgPath))
+		logger.Info(fmt.Sprintf("Unable to parse config file %q, running with defaults", cfgPath))
 		return &config.Config{}
 	}
 
