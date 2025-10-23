@@ -15,8 +15,7 @@ func init() {
 }
 
 // Phonydeclared is an empty struct on which to call the rule functions
-type Phonydeclared struct {
-}
+type Phonydeclared struct{}
 
 // Name returns the name of the rule
 func (r *Phonydeclared) Name() string {

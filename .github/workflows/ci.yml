@@ -29,6 +29,23 @@ jobs:
       with:
         fetch-depth: 1
 
+    - name: Install gofumpt
+      if: matrix.os == 'ubuntu-latest'
+      run: go install mvdan.cc/gofumpt@latest
+      shell: bash
+
+    - name: Run gofumpt check
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        UNFORMATTED=$(gofumpt -l .)
+        if [ -n "$UNFORMATTED" ]; then
+          echo "The following files are not gofumpt-formatted:"
+          echo "$UNFORMATTED"
+          echo "Run 'gofumpt -w .' locally to fix formatting."
+          exit 1
+        fi
+      shell: bash
+
     - name: Install dependencies (Windows)
       if: matrix.os == 'windows-latest'
       run: |

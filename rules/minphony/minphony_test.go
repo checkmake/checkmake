@@ -86,6 +86,7 @@ func TestMinPhony_Run(t *testing.T) {
 		assert.Equal(t, test.vl, mp.Run(test.mf, rules.RuleConfig{}))
 	}
 }
+
 func TestMinPhony_RunWithConfig(t *testing.T) {
 	mp := &MinPhony{required: []string{}}
 

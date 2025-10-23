@@ -59,7 +59,6 @@ var (
 // of the heavy lifting will live in the specific parsing functions below that
 // know how to deal with individual lines.
 func Parse(filepath string) (ret Makefile, err error) {
-
 	ret.FileName = filepath
 	var scanner *MakefileScanner
 	scanner, err = NewMakefileScanner(filepath)
@@ -79,7 +78,8 @@ func Parse(filepath string) (ret Makefile, err error) {
 					Assignment:      strings.TrimSpace(matches[2]),
 					SpecialVariable: true,
 					FileName:        filepath,
-					LineNumber:      scanner.LineNumber}
+					LineNumber:      scanner.LineNumber,
+				}
 				ret.Variables = append(ret.Variables, specialVar)
 			}
 			scanner.Scan()
@@ -154,14 +154,16 @@ func parseRuleOrVariable(scanner *MakefileScanner) (ret interface{}, err error) 
 			Dependencies: filteredDeps,
 			Body:         ruleBody,
 			FileName:     scanner.FileHandle.Name(),
-			LineNumber:   beginLineNumber}
+			LineNumber:   beginLineNumber,
+		}
 	} else if matches := reFindSimpleVariable.FindStringSubmatch(line); matches != nil {
 		ret = Variable{
 			Name:           strings.TrimSpace(matches[1]),
 			Assignment:     strings.TrimSpace(matches[2]),
 			SimplyExpanded: true,
 			FileName:       scanner.FileHandle.Name(),
-			LineNumber:     scanner.LineNumber}
+			LineNumber:     scanner.LineNumber,
+		}
 		scanner.Scan()
 	} else if matches := reFindExpandedVariable.FindStringSubmatch(line); matches != nil {
 		ret = Variable{
@@ -169,7 +171,8 @@ func parseRuleOrVariable(scanner *MakefileScanner) (ret interface{}, err error) 
 			Assignment:     strings.TrimSpace(matches[2]),
 			SimplyExpanded: false,
 			FileName:       scanner.FileHandle.Name(),
-			LineNumber:     scanner.LineNumber}
+			LineNumber:     scanner.LineNumber,
+		}
 		scanner.Scan()
 	} else {
 		if strings.TrimSpace(line) != "" {
