@@ -19,12 +19,9 @@ func init() {
 }
 
 // Timestampexpanded is an empty struct on which to call the rule functions
-type Timestampexpanded struct {
-}
+type Timestampexpanded struct{}
 
-var (
-	vT = "Variable %q possibly contains a timestamp and should be simply expanded."
-)
+var vT = "Variable %q possibly contains a timestamp and should be simply expanded."
 
 // Name returns the name of the rule
 func (r *Timestampexpanded) Name() string {

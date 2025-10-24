@@ -44,9 +44,7 @@ type RuleConfigMap map[string]RuleConfig
 // RuleRegistry is the type to hold rules keyed by their name
 type RuleRegistry map[string]Rule
 
-var (
-	ruleRegistry RuleRegistry
-)
+var ruleRegistry RuleRegistry
 
 func init() {
 	ruleRegistry = make(RuleRegistry)
