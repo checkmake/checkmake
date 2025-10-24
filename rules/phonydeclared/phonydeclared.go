@@ -15,8 +15,7 @@ func init() {
 }
 
 // Phonydeclared is an empty struct on which to call the rule functions
-type Phonydeclared struct {
-}
+type Phonydeclared struct{}
 
 // Name returns the name of the rule
 func (r *Phonydeclared) Name() string {
@@ -44,7 +43,7 @@ func (r *Phonydeclared) Run(makefile parser.Makefile, config rules.RuleConfig) r
 
 	for _, rule := range makefile.Rules {
 		_, ok := ruleIndex[rule.Target]
-		if len(rule.Body) == 0 && ok == false {
+		if len(rule.Body) == 0 && !ok {
 			ret = append(ret, rules.RuleViolation{
 				Rule:       "phonydeclared",
 				Violation:  fmt.Sprintf("Target %q should be declared PHONY.", rule.Target),

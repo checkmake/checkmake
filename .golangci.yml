@@ -1,0 +1,34 @@
+version: "2"
+
+run:
+  tests: true
+  timeout: 5m
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
+    - goconst
+    - prealloc
+    - unparam
+    - nolintlint
+    - misspell
+    - revive
+  disable:
+    - dupl
+    - errcheck
+    - gocyclo
+
+  settings:
+    revive:
+      severity: warning
+    staticcheck:
+      checks:
+        - all
+        - "-ST1005"
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

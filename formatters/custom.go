@@ -32,7 +32,6 @@ func NewCustomFormatter(templateString string) (ret *CustomFormatter, err error)
 
 // Format is the function to call to get the formatted output
 func (f *CustomFormatter) Format(violations rules.RuleViolationList) {
-
 	for _, val := range violations {
 		err := f.template.Execute(f.out, val)
 		f.out.Write([]byte("\n"))
@@ -40,5 +39,4 @@ func (f *CustomFormatter) Format(violations rules.RuleViolationList) {
 			logger.Error(err.Error())
 		}
 	}
-
 }

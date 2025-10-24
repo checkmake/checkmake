@@ -9,34 +9,39 @@ import (
 )
 
 func TestAllTargetsArePhony(t *testing.T) {
-
 	makefile := parser.Makefile{
 		FileName: "phony-declared-all-phony.mk",
-		Variables: []parser.Variable{parser.Variable{
+		Variables: []parser.Variable{{
 			Name:       "PHONY",
-			Assignment: "all clean"}},
-		Rules: []parser.Rule{parser.Rule{
-			Target: "all"}, parser.Rule{Target: "clean"},
-		}}
+			Assignment: "all clean",
+		}},
+		Rules: []parser.Rule{
+			{
+				Target: "all",
+			}, {Target: "clean"},
+		},
+	}
 
 	rule := Phonydeclared{}
 
 	ret := rule.Run(makefile, rules.RuleConfig{})
 
 	assert.Equal(t, len(ret), 0)
-
 }
 
 func TestMissingOnePhonyTarget(t *testing.T) {
-
 	makefile := parser.Makefile{
 		FileName: "phony-declared-missing-one-phony.mk",
-		Variables: []parser.Variable{parser.Variable{
+		Variables: []parser.Variable{{
 			Name:       "PHONY",
-			Assignment: "all"}},
-		Rules: []parser.Rule{parser.Rule{
-			Target: "all"}, parser.Rule{Target: "clean"},
-		}}
+			Assignment: "all",
+		}},
+		Rules: []parser.Rule{
+			{
+				Target: "all",
+			}, {Target: "clean"},
+		},
+	}
 
 	rule := Phonydeclared{}
 

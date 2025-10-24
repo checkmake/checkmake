@@ -28,7 +28,6 @@ func NewConfigFromFile(path string) (*Config, error) {
 // GetRuleConfig returns a rules.RuleConfig for the given rule. A rule
 // corresponds to a section in the config ini file
 func (c *Config) GetRuleConfig(rule string) (ret rules.RuleConfig) {
-
 	if c.iniFile == nil {
 		logger.Debug("iniFile not initialized")
 		return

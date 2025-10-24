@@ -10,7 +10,6 @@ import (
 )
 
 func TestSimpleConfig(t *testing.T) {
-
 	cfg, err := NewConfigFromFile("../fixtures/exampleConfig.ini")
 
 	require.Equal(t, nil, err, "Parsing of the fixture config file should have worked.")
@@ -19,11 +18,9 @@ func TestSimpleConfig(t *testing.T) {
 
 	assert.Equal(t, "true", ruleCfg["disabled"])
 	assert.Equal(t, "bla", ruleCfg["foo"])
-
 }
 
 func TestFailConfig(t *testing.T) {
-
 	cfg, err := NewConfigFromFile("../fixtures/idontexist.ini")
 
 	assert.NotEqual(t, nil, err)
@@ -34,7 +31,6 @@ func TestFailConfig(t *testing.T) {
 }
 
 func TestGetConfigValue(t *testing.T) {
-
 	cfg, err := NewConfigFromFile("../fixtures/exampleConfig.ini")
 
 	require.Equal(t, nil, err, "Parsing of the fixture config file should have worked.")
@@ -47,7 +43,6 @@ func TestGetConfigValue(t *testing.T) {
 }
 
 func TestGetConfigValueOnMissingConfigFile(t *testing.T) {
-
 	cfg, err := NewConfigFromFile("../fixtures/idontexist.ini")
 
 	assert.NotEqual(t, nil, err)
@@ -61,7 +56,6 @@ func TestGetConfigValueOnMissingConfigFile(t *testing.T) {
 }
 
 func TestGetMissingConfigValue(t *testing.T) {
-
 	cfg, err := NewConfigFromFile("../fixtures/exampleConfig.ini")
 
 	require.Equal(t, nil, err, "Parsing of the fixture config file should have worked.")
@@ -74,7 +68,6 @@ func TestGetMissingConfigValue(t *testing.T) {
 }
 
 func TestGetConfigValueOnMissingDefaultSection(t *testing.T) {
-
 	cfg, err := NewConfigFromFile("../fixtures/exampleConfigNoDefault.ini")
 
 	require.Equal(t, nil, err, "Parsing of the fixture config file should have worked.")

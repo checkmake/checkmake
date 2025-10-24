@@ -10,21 +10,16 @@ import (
 	"github.com/checkmake/checkmake/rules"
 )
 
-var (
-	maxBodyLength = 5
-)
+var maxBodyLength = 5
 
 func init() {
 	rules.RegisterRule(&MaxBodyLength{})
 }
 
 // MaxBodyLength is an empty struct on which to call the rule functions
-type MaxBodyLength struct {
-}
+type MaxBodyLength struct{}
 
-var (
-	vT = "Target body for %q exceeds allowed length of %d lines (%d)."
-)
+var vT = "Target body for %q exceeds allowed length of %d lines (%d)."
 
 // Name returns the name of the rule
 func (m *MaxBodyLength) Name() string {

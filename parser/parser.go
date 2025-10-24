@@ -6,7 +6,6 @@
 package parser
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -47,11 +46,11 @@ type Variable struct {
 type VariableList []Variable
 
 var (
-	reFindRule             = regexp.MustCompile("^([a-zA-Z]+):(.*)")
-	reFindRuleBody         = regexp.MustCompile("^\t+(.*)")
-	reFindSimpleVariable   = regexp.MustCompile("^([a-zA-Z]+) ?:=(.*)")
-	reFindExpandedVariable = regexp.MustCompile("^([a-zA-Z]+) ?=(.*)")
-	reFindSpecialVariable  = regexp.MustCompile("^\\.([a-zA-Z_]+):(.*)")
+	reFindRule             = regexp.MustCompile(`^([a-zA-Z]+):(.*)`)
+	reFindRuleBody         = regexp.MustCompile(`^\t+(.*)`)
+	reFindSimpleVariable   = regexp.MustCompile(`^([a-zA-Z]+) ?:=(.*)`)
+	reFindExpandedVariable = regexp.MustCompile(`^([a-zA-Z]+) ?=(.*)`)
+	reFindSpecialVariable  = regexp.MustCompile(`^\.([a-zA-Z_]+):(.*)`)
 )
 
 // Parse is the main function to parse a Makefile from a file path string to a
@@ -59,7 +58,6 @@ var (
 // of the heavy lifting will live in the specific parsing functions below that
 // know how to deal with individual lines.
 func Parse(filepath string) (ret Makefile, err error) {
-
 	ret.FileName = filepath
 	var scanner *MakefileScanner
 	scanner, err = NewMakefileScanner(filepath)
@@ -79,7 +77,8 @@ func Parse(filepath string) (ret Makefile, err error) {
 					Assignment:      strings.TrimSpace(matches[2]),
 					SpecialVariable: true,
 					FileName:        filepath,
-					LineNumber:      scanner.LineNumber}
+					LineNumber:      scanner.LineNumber,
+				}
 				ret.Variables = append(ret.Variables, specialVar)
 			}
 			scanner.Scan()
@@ -90,23 +89,16 @@ func Parse(filepath string) (ret Makefile, err error) {
 			if parseError != nil {
 				return ret, parseError
 			}
-			switch ruleOrVariable.(type) {
+			switch v := ruleOrVariable.(type) {
 			case Rule:
-				rule, found := ruleOrVariable.(Rule)
-				if found != true {
-					return ret, errors.New("Parse error")
-				}
-				ret.Rules = append(ret.Rules, rule)
+				ret.Rules = append(ret.Rules, v)
 			case Variable:
-				variable, found := ruleOrVariable.(Variable)
-				if found != true {
-					return ret, errors.New("Parse error")
-				}
-				ret.Variables = append(ret.Variables, variable)
+				ret.Variables = append(ret.Variables, v)
 			}
+
 		}
 
-		if scanner.Finished == true {
+		if scanner.Finished {
 			return
 		}
 	}
@@ -120,6 +112,7 @@ func Parse(filepath string) (ret Makefile, err error) {
 // returned struct. The parsing of line details is done via regexing for now
 // since it seems ok as a first pass but will likely have to change later into
 // a proper lexer/parser setup.
+//nolint:unparam // parseRuleOrVariable never returns an error yet, placeholder for future error handling
 func parseRuleOrVariable(scanner *MakefileScanner) (ret interface{}, err error) {
 	line := scanner.Text()
 
@@ -154,14 +147,16 @@ func parseRuleOrVariable(scanner *MakefileScanner) (ret interface{}, err error) 
 			Dependencies: filteredDeps,
 			Body:         ruleBody,
 			FileName:     scanner.FileHandle.Name(),
-			LineNumber:   beginLineNumber}
+			LineNumber:   beginLineNumber,
+		}
 	} else if matches := reFindSimpleVariable.FindStringSubmatch(line); matches != nil {
 		ret = Variable{
 			Name:           strings.TrimSpace(matches[1]),
 			Assignment:     strings.TrimSpace(matches[2]),
 			SimplyExpanded: true,
 			FileName:       scanner.FileHandle.Name(),
-			LineNumber:     scanner.LineNumber}
+			LineNumber:     scanner.LineNumber,
+		}
 		scanner.Scan()
 	} else if matches := reFindExpandedVariable.FindStringSubmatch(line); matches != nil {
 		ret = Variable{
@@ -169,7 +164,8 @@ func parseRuleOrVariable(scanner *MakefileScanner) (ret interface{}, err error) 
 			Assignment:     strings.TrimSpace(matches[2]),
 			SimplyExpanded: false,
 			FileName:       scanner.FileHandle.Name(),
-			LineNumber:     scanner.LineNumber}
+			LineNumber:     scanner.LineNumber,
+		}
 		scanner.Scan()
 	} else {
 		if strings.TrimSpace(line) != "" {

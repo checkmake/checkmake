@@ -26,10 +26,12 @@ func (f *DefaultFormatter) Format(violations rules.RuleViolationList) {
 	data := make([][]string, len(violations))
 
 	for idx, val := range violations {
-		data[idx] = []string{val.Rule,
+		data[idx] = []string{
+			val.Rule,
 			val.Violation,
 			val.FileName,
-			strconv.Itoa(val.LineNumber)}
+			strconv.Itoa(val.LineNumber),
+		}
 	}
 
 	table := tablewriter.NewTable(f.out,

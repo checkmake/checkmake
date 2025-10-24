@@ -197,4 +197,3 @@ func TestCheckmake_MinPhonyDetectsMissingTargets(t *testing.T) {
 	assert.Contains(t, out, "from the Makefile", "should identify missing targets")
 	assert.Contains(t, out, "minphony", "should include rule name in output")
 }
-

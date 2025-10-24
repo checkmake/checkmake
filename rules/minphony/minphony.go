@@ -10,13 +10,11 @@ import (
 	"github.com/checkmake/checkmake/rules"
 )
 
-var (
-	defaultRequired = []string{
-		"all",
-		"clean",
-		"test",
-	}
-)
+var defaultRequired = []string{
+	"all",
+	"clean",
+	"test",
+}
 
 func init() {
 	rules.RegisterRule(&MinPhony{required: defaultRequired})

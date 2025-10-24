@@ -23,7 +23,7 @@ type MakefileScanner struct {
 func (s *MakefileScanner) Scan() bool {
 	s.LineNumber++
 	scanResult := s.Scanner.Scan()
-	if scanResult == false && s.Scanner.Err() == nil {
+	if !scanResult && s.Scanner.Err() == nil {
 		s.Finished = true
 	}
 	return scanResult
