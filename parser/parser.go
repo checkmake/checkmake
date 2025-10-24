@@ -46,11 +46,11 @@ type Variable struct {
 type VariableList []Variable
 
 var (
-	reFindRule             = regexp.MustCompile("^([a-zA-Z]+):(.*)")
-	reFindRuleBody         = regexp.MustCompile("^\t+(.*)")
-	reFindSimpleVariable   = regexp.MustCompile("^([a-zA-Z]+) ?:=(.*)")
-	reFindExpandedVariable = regexp.MustCompile("^([a-zA-Z]+) ?=(.*)")
-	reFindSpecialVariable  = regexp.MustCompile("^\\.([a-zA-Z_]+):(.*)")
+	reFindRule             = regexp.MustCompile(`^([a-zA-Z]+):(.*)`)
+	reFindRuleBody         = regexp.MustCompile(`^\t+(.*)`)
+	reFindSimpleVariable   = regexp.MustCompile(`^([a-zA-Z]+) ?:=(.*)`)
+	reFindExpandedVariable = regexp.MustCompile(`^([a-zA-Z]+) ?=(.*)`)
+	reFindSpecialVariable  = regexp.MustCompile(`^\.([a-zA-Z_]+):(.*)`)
 )
 
 // Parse is the main function to parse a Makefile from a file path string to a
