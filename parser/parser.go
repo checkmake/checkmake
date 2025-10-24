@@ -6,7 +6,6 @@
 package parser
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -90,20 +89,13 @@ func Parse(filepath string) (ret Makefile, err error) {
 			if parseError != nil {
 				return ret, parseError
 			}
-			switch ruleOrVariable.(type) {
+			switch v := ruleOrVariable.(type) {
 			case Rule:
-				rule, found := ruleOrVariable.(Rule)
-				if !found {
-					return ret, errors.New("Parse error")
-				}
-				ret.Rules = append(ret.Rules, rule)
+				ret.Rules = append(ret.Rules, v)
 			case Variable:
-				variable, found := ruleOrVariable.(Variable)
-				if !found {
-					return ret, errors.New("Parse error")
-				}
-				ret.Variables = append(ret.Variables, variable)
+				ret.Variables = append(ret.Variables, v)
 			}
+
 		}
 
 		if scanner.Finished {
