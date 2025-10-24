@@ -9,19 +9,21 @@ import (
 )
 
 func TestFooIsTooLong(t *testing.T) {
-
 	makefile := parser.Makefile{
 		FileName: "maxbodylength.mk",
-		Rules: []parser.Rule{parser.Rule{
+		Rules: []parser.Rule{{
 			Target: "foo",
-			Body: []string{"echo 'foo'",
+			Body: []string{
 				"echo 'foo'",
 				"echo 'foo'",
 				"echo 'foo'",
 				"echo 'foo'",
 				"echo 'foo'",
-				"echo 'foo'"},
-			LineNumber: 1}},
+				"echo 'foo'",
+				"echo 'foo'",
+			},
+			LineNumber: 1,
+		}},
 	}
 
 	rule := MaxBodyLength{}
@@ -37,16 +39,18 @@ func TestFooIsTooLong(t *testing.T) {
 }
 
 func TestFooIsTooLongWithConfig(t *testing.T) {
-
 	makefile := parser.Makefile{
 		FileName: "maxbodylength.mk",
-		Rules: []parser.Rule{parser.Rule{
+		Rules: []parser.Rule{{
 			Target: "foo",
-			Body: []string{"echo 'foo'",
+			Body: []string{
 				"echo 'foo'",
 				"echo 'foo'",
-				"echo 'foo'"},
-			LineNumber: 1}},
+				"echo 'foo'",
+				"echo 'foo'",
+			},
+			LineNumber: 1,
+		}},
 	}
 
 	rule := MaxBodyLength{}

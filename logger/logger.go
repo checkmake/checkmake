@@ -17,9 +17,7 @@ const (
 	DebugLevel
 )
 
-var (
-	level = ErrorLevel
-)
+var level = ErrorLevel
 
 // SetLogLevel allows consumers to set the logging level
 func SetLogLevel(lvl LogLevel) {
