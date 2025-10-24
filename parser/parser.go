@@ -112,6 +112,7 @@ func Parse(filepath string) (ret Makefile, err error) {
 // returned struct. The parsing of line details is done via regexing for now
 // since it seems ok as a first pass but will likely have to change later into
 // a proper lexer/parser setup.
+//nolint:unparam // parseRuleOrVariable never returns an error yet, placeholder for future error handling
 func parseRuleOrVariable(scanner *MakefileScanner) (ret interface{}, err error) {
 	line := scanner.Text()
 
