@@ -16,6 +16,13 @@ BUILDDATE := $(shell date -u +"%B %d, %Y")
 
 BUILD_GOOS ?= $(shell go env GOOS)
 BUILD_GOARCH ?= $(shell go env GOARCH)
+BUILD_GOPATH :=$(shell go env GOPATH)
+
+GOLANGCI_LINT_VERSION := latest
+GOLANGCI_LINT_MAJOR_VER := v2
+GOLANGCI_LINT_BIN:= $(BUILD_GOPATH)/bin/golangci-lint
+
+
 
 ifeq ($(BUILD_GOOS),windows)
 	EXTENSION := .exe
@@ -65,7 +72,7 @@ INSTALLED_MAN_TARGETS = $(addprefix $(PREFIX)/share/man/man1/, $(MAN_TARGETS))
 %.1: man/man1/%.1.md
 	sed "s/REPLACE_DATE/$(BUILDDATE)/" $< | pandoc -s -t man -o $@
 
-all: require $(TARGETS) $(MAN_TARGETS)
+all: lint require $(TARGETS) $(MAN_TARGETS)
 .DEFAULT_GOAL:=all
 
 binaries: $(TARGETS)
@@ -75,8 +82,26 @@ require:
 	@pandoc --version >/dev/null 2>&1 || (echo "ERROR: pandoc is required."; exit 1)
 
 # development tasks
-test:
+
+test: lint
 	go test -v $(TEST_PKG)
+
+.PHONY: vet
+vet:
+	@go vet ./...
+
+.PHONY: golangci-lint
+golangci-lint: $(GOLANGCI_LINT_BIN)
+	@$(GOLANGCI_LINT_BIN) run
+
+$(GOLANGCI_LINT_BIN):
+	@go install github.com/golangci/golangci-lint/$(GOLANGCI_LINT_MAJOR_VER)/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+
+.PHONY: lint
+lint: vet golangci-lint
+
+
+
 
 coverage:
 	@echo "mode: set" > cover.out
