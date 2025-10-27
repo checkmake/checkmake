@@ -93,20 +93,20 @@ func Parse(filepath string) (ret Makefile, err error) {
 			switch ruleOrVariable.(type) {
 			case Rule:
 				rule, found := ruleOrVariable.(Rule)
-				if found != true {
+				if !found {
 					return ret, errors.New("Parse error")
 				}
 				ret.Rules = append(ret.Rules, rule)
 			case Variable:
 				variable, found := ruleOrVariable.(Variable)
-				if found != true {
+				if !found {
 					return ret, errors.New("Parse error")
 				}
 				ret.Variables = append(ret.Variables, variable)
 			}
 		}
 
-		if scanner.Finished == true {
+		if scanner.Finished {
 			return
 		}
 	}
