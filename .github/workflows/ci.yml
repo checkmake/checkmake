@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     env:
       BUILDER_NAME: "GitHub Actions"
       BUILDER_EMAIL: noreply@actions.github.com
@@ -35,6 +35,11 @@ jobs:
         choco install -y make sed
         choco install -y pandoc --version 2.7.3
 
+    - name: Install dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew install pandoc
+        
     - name: Install dependencies (Linux/Ubuntu)
       if: matrix.os == 'ubuntu-latest'
       run: |
