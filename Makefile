@@ -139,8 +139,6 @@ deploy-packages: packages
 	package_cloud push mrtazz/$(NAME)/debian/trixie *.deb
 	package_cloud push mrtazz/$(NAME)/ubuntu/hirsute *.deb
 
-vendor:
-	go mod vendor
 
 rpm: $(SOURCES)
 	  fpm -t rpm -s dir \
@@ -195,4 +193,4 @@ pizza: # ignore checkmake
 	@echo ""
 	@echo ""
 
-.PHONY: all test rpm deb install local-install packages vendor coverage clean-deps clean clean-docs pizza binaries
+.PHONY: all test rpm deb install local-install packages coverage clean-deps clean clean-docs pizza binaries
