@@ -9,6 +9,7 @@ import (
 )
 
 func TestUniqueTargets(t *testing.T) {
+	t.Parallel()
 	makefile := parser.Makefile{
 		FileName: "no-duplicates.mk",
 		Rules: []parser.Rule{
@@ -25,6 +26,7 @@ func TestUniqueTargets(t *testing.T) {
 }
 
 func TestNoUniqueTargetsDetected(t *testing.T) {
+	t.Parallel()
 	makefile := parser.Makefile{
 		FileName: "unique_targets.mk",
 		Rules: []parser.Rule{
@@ -44,6 +46,7 @@ func TestNoUniqueTargetsDetected(t *testing.T) {
 }
 
 func TestUniqueTargetsIgnoredByConfig(t *testing.T) {
+	t.Parallel()
 	makefile := parser.Makefile{
 		FileName: "unique_ignored.mk",
 		Rules: []parser.Rule{
@@ -63,4 +66,23 @@ func TestUniqueTargetsIgnoredByConfig(t *testing.T) {
 	assert.Equal(t, 1, len(ret), "only non-ignored duplicates should trigger violations")
 	assert.Contains(t, ret[0].Violation, `"deploy" defined multiple times`)
 	assert.NotContains(t, ret[0].Violation, `"test"`)
+}
+
+func TestPhonyTargetsAreIgnored(t *testing.T) {
+	t.Parallel()
+	makefile := parser.Makefile{
+		FileName: "phony_targets.mk",
+		Rules: []parser.Rule{
+			{Target: ".PHONY", LineNumber: 1},
+			{Target: ".PHONY", LineNumber: 3},
+			{Target: "build", LineNumber: 5},
+			{Target: "build", LineNumber: 8}, // duplicate real target
+		},
+	}
+
+	rule := UniqueTargets{}
+	ret := rule.Run(makefile, rules.RuleConfig{})
+
+	assert.Equal(t, 1, len(ret), "only non-.PHONY duplicates should trigger violations")
+	assert.Contains(t, ret[0].Violation, `"build" defined multiple times`)
 }

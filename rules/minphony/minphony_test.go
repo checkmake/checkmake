@@ -70,6 +70,7 @@ var mpRunTests = []struct {
 }
 
 func TestMinPhony_new(t *testing.T) {
+	t.Parallel()
 	mp := &MinPhony{required: []string{"oh", "hai"}}
 
 	assert.Equal(t, []string{"oh", "hai"}, mp.required)
@@ -80,6 +81,7 @@ func TestMinPhony_new(t *testing.T) {
 }
 
 func TestMinPhony_Run(t *testing.T) {
+	t.Parallel()
 	mp := &MinPhony{required: []string{"kleen", "awl", "toast"}}
 
 	for _, test := range mpRunTests {
@@ -88,6 +90,7 @@ func TestMinPhony_Run(t *testing.T) {
 }
 
 func TestMinPhony_RunWithConfig(t *testing.T) {
+	t.Parallel()
 	mp := &MinPhony{required: []string{}}
 
 	mf := parser.Makefile{
@@ -126,6 +129,7 @@ func TestMinPhony_RunWithConfig(t *testing.T) {
 }
 
 func TestMinPhony_MissingPhonyDeclaration(t *testing.T) {
+	t.Parallel()
 	makefile := parser.Makefile{
 		FileName: "missing-phony.mk",
 		Rules: []parser.Rule{

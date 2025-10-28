@@ -20,7 +20,7 @@ func init() {
 	rules.RegisterRule(&MinPhony{required: defaultRequired})
 }
 
-// MinPhony is an empty struct on which to call the rule functions
+//MinPhony is an empty struct on which to call the rule functions
 type MinPhony struct {
 	required []string
 }
@@ -49,8 +49,6 @@ func (r *MinPhony) Run(makefile parser.Makefile, config rules.RuleConfig) rules.
 	// Load configured required targets, if any
 	required := r.required
 	if confRequired, ok := config["required"]; ok {
-		// special case:
-		// empty string means disable the rule.
 		if confRequired == "" {
 			required = []string{}
 		} else {
@@ -64,12 +62,39 @@ func (r *MinPhony) Run(makefile parser.Makefile, config rules.RuleConfig) rules.
 	// Collect all declared phony targets
 	declaredPhony := map[string]bool{}
 	phonyLine := 0
+
+	// .PHONY parsed as variable (old behavior)
 	for _, variable := range makefile.Variables {
 		if variable.Name == "PHONY" {
-			phonyLine = variable.LineNumber - 1
+			phonyLine = variable.LineNumber
 			for _, phony := range strings.Fields(variable.Assignment) {
 				declaredPhony[phony] = true
 			}
+		}
+	}
+
+	// .PHONY parsed as rule (new parser behavior)
+	for _, rule := range makefile.Rules {
+		if rule.Target == ".PHONY" || rule.Target == "PHONY" {
+			phonyLine = rule.LineNumber
+			for _, phony := range rule.Dependencies {
+				declaredPhony[phony] = true
+			}
+		}
+	}
+
+	// NOTE: historically, when .PHONY was parsed as a variable,
+	// the reported line number was adjusted with `-1`. Now that
+	// .PHONY is parsed as a rule, we use the accurate line number.
+	// This change causes a +1 shift in violation line reporting.
+	//
+	// Fallback: ensure phonyLine is never undefined
+	if phonyLine == 0 {
+		if len(makefile.Rules) > 0 {
+			phonyLine = makefile.Rules[len(makefile.Rules)-1].LineNumber
+		}
+		if phonyLine == 0 {
+			phonyLine = -1 // match historical behavior for missing PHONY line
 		}
 	}
 
