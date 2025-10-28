@@ -9,6 +9,7 @@ import (
 )
 
 func TestAllTargetsArePhony(t *testing.T) {
+	t.Parallel()
 	makefile := parser.Makefile{
 		FileName: "phony-declared-all-phony.mk",
 		Variables: []parser.Variable{{
@@ -30,6 +31,7 @@ func TestAllTargetsArePhony(t *testing.T) {
 }
 
 func TestMissingOnePhonyTarget(t *testing.T) {
+	t.Parallel()
 	makefile := parser.Makefile{
 		FileName: "phony-declared-missing-one-phony.mk",
 		Variables: []parser.Variable{{
