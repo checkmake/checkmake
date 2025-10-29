@@ -120,7 +120,7 @@ func TestCheckmake_WithCustomFormatFlag(t *testing.T) {
 
 	// There are three expected rules in missing_phony.make: phonydeclared and minphony twice
 	assert.Contains(t, out, "phonydeclared on 16")
-	assert.Contains(t, out, "minphony on 21")
+	assert.Contains(t, out, "minphony on 22")
 }
 
 func TestCheckmake_DebugLogsMakefilesPassed(t *testing.T) {

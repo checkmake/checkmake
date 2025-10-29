@@ -33,15 +33,30 @@ func (r *Phonydeclared) Run(makefile parser.Makefile, config rules.RuleConfig) r
 
 	ruleIndex := make(map[string]bool)
 
+	// Case 1: .PHONY parsed as variable (old parser behavior)
 	for _, variable := range makefile.Variables {
 		if variable.Name == "PHONY" {
-			for _, phony := range strings.Split(variable.Assignment, " ") {
+			for _, phony := range strings.Fields(variable.Assignment) {
 				ruleIndex[phony] = true
 			}
 		}
 	}
 
+	// Case 2: .PHONY parsed as rule (new parser behavior)
 	for _, rule := range makefile.Rules {
+		if rule.Target == ".PHONY" || rule.Target == "PHONY" {
+			for _, phony := range rule.Dependencies {
+				ruleIndex[phony] = true
+			}
+		}
+	}
+	// Check that every non-dot-prefixed target without a body is PHONY
+	for _, rule := range makefile.Rules {
+		// Skip special or dot-prefixed targets like .PHONY or .DEFAULT_GOAL
+		if strings.HasPrefix(rule.Target, ".") {
+			continue
+		}
+
 		_, ok := ruleIndex[rule.Target]
 		if len(rule.Body) == 0 && !ok {
 			ret = append(ret, rules.RuleViolation{

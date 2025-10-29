@@ -55,6 +55,11 @@ func (r *UniqueTargets) Run(makefile parser.Makefile, cfg rules.RuleConfig) rule
 			continue
 		}
 
+		// Skip special built-ins like .PHONY
+		if rule.Target == ".PHONY" {
+			continue
+		}
+
 		if prevLine, exists := seen[rule.Target]; exists {
 			violations = append(violations, rules.RuleViolation{
 				Rule:       r.Name(),

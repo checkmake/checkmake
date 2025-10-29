@@ -46,11 +46,40 @@ type Variable struct {
 type VariableList []Variable
 
 var (
-	reFindRule             = regexp.MustCompile(`^([a-zA-Z]+):(.*)`)
-	reFindRuleBody         = regexp.MustCompile(`^\t+(.*)`)
-	reFindSimpleVariable   = regexp.MustCompile(`^([a-zA-Z]+) ?:=(.*)`)
-	reFindExpandedVariable = regexp.MustCompile(`^([a-zA-Z]+) ?=(.*)`)
-	reFindSpecialVariable  = regexp.MustCompile(`^\.([a-zA-Z_]+):(.*)`)
+	// Group 1: The target(s). This is intentionally broad, allowing for special characters (%, .),
+	//          variables ($(), ${}), spaces (for multiple targets), and file paths.
+	// Group 2: Everything after the colon (prerequisites and/or an inline recipe).
+	// Notes: This pattern intentionally excludes variable assignments (":=", "?=", "+=", "!=")
+	//        by ensuring that ':' is not immediately followed by '='.
+	reFindRule = regexp.MustCompile(`^([A-Za-z0-9_.%/\-$(){}\s]+)\s*:(\s*[^=].*)?$`)
+
+	// reFindRuleBody captures a line belonging to a rule's recipe.
+	// It must start with a tab.
+	// Group 1: The command to be executed.
+	reFindRuleBody = regexp.MustCompile(`^\t+(.*)`)
+
+	// reFindSimpleVariable captures simple/immediate variable assignments.
+	// This includes ':=', '::=', and ':::='.
+	// Group 1: The variable name (alphanumeric, underscore, dot, hyphen).
+	// Group 2: The value being assigned.
+	reFindSimpleVariable = regexp.MustCompile(`^([A-Za-z0-9_.-]+)\s*:{1,3}=\s*(.*)`)
+
+	// reFindExpandedVariable captures recursively expanded variable assignments ('=').
+	// Group 1: The variable name.
+	// Group 2: The value being assigned.
+	reFindExpandedVariable = regexp.MustCompile(`^([A-Za-z0-9_.-]+)\s*=\s*(.*)`)
+
+	// reFindOtherVariable captures all other assignment operators.
+	// This includes conditional ('?='), shell ('!='), and append ('+=').
+	// Group 1: The variable name.
+	// Group 2: The operator itself ('?=', '!=', or '+=').
+	// Group 3: The value being assigned.
+	reFindOtherVariable = regexp.MustCompile(`^([A-Za-z0-9_.-]+)\s*([?!+]=)\s*(.*)`)
+
+	// reFindSpecialTarget captures special Make targets that start with a dot, like .PHONY.
+	// Group 1: The special target name (e.g., ".PHONY").
+	// Group 2: The prerequisites/dependencies (e.g., "all clean test").
+	reFindSpecialTarget = regexp.MustCompile(`^(\.[A-Za-z_]+)\s*:(.*)`)
 )
 
 // Parse is the main function to parse a Makefile from a file path string to a
@@ -71,15 +100,16 @@ func Parse(filepath string) (ret Makefile, err error) {
 			// parse comments here, ignoring them for now
 			scanner.Scan()
 		case strings.HasPrefix(scanner.Text(), "."):
-			if matches := reFindSpecialVariable.FindStringSubmatch(scanner.Text()); matches != nil {
-				specialVar := Variable{
-					Name:            strings.TrimSpace(matches[1]),
-					Assignment:      strings.TrimSpace(matches[2]),
-					SpecialVariable: true,
-					FileName:        filepath,
-					LineNumber:      scanner.LineNumber,
+			if matches := reFindSpecialTarget.FindStringSubmatch(scanner.Text()); matches != nil {
+				// Treat special targets like .PHONY or .DEFAULT_GOAL as rules, not variables
+				specialRule := Rule{
+					Target:       strings.TrimSpace(matches[1]),
+					Dependencies: strings.Fields(strings.TrimSpace(matches[2])),
+					Body:         nil,
+					FileName:     filepath,
+					LineNumber:   scanner.LineNumber,
 				}
-				ret.Variables = append(ret.Variables, specialVar)
+				ret.Rules = append(ret.Rules, specialRule)
 			}
 			scanner.Scan()
 		default:
@@ -112,44 +142,12 @@ func Parse(filepath string) (ret Makefile, err error) {
 // returned struct. The parsing of line details is done via regexing for now
 // since it seems ok as a first pass but will likely have to change later into
 // a proper lexer/parser setup.
+//
 //nolint:unparam // parseRuleOrVariable never returns an error yet, placeholder for future error handling
 func parseRuleOrVariable(scanner *MakefileScanner) (ret interface{}, err error) {
 	line := scanner.Text()
 
-	if matches := reFindRule.FindStringSubmatch(line); matches != nil {
-		// we found a rule so we need to advance the scanner to figure out if
-		// there is a body
-		beginLineNumber := scanner.LineNumber - 1
-		scanner.Scan()
-		bodyMatches := reFindRuleBody.FindStringSubmatch(scanner.Text())
-		ruleBody := make([]string, 0, 20)
-		for bodyMatches != nil {
-
-			ruleBody = append(ruleBody, strings.TrimSpace(bodyMatches[1]))
-
-			// done parsing the rule body line, advance the scanner and potentially
-			// go into the next loop iteration
-			scanner.Scan()
-			bodyMatches = reFindRuleBody.FindStringSubmatch(scanner.Text())
-		}
-		// trim whitespace from all dependencies
-		deps := strings.Split(matches[2], " ")
-		filteredDeps := make([]string, 0, cap(deps))
-
-		for idx := range deps {
-			item := strings.TrimSpace(deps[idx])
-			if item != "" {
-				filteredDeps = append(filteredDeps, item)
-			}
-		}
-		ret = Rule{
-			Target:       strings.TrimSpace(matches[1]),
-			Dependencies: filteredDeps,
-			Body:         ruleBody,
-			FileName:     scanner.FileHandle.Name(),
-			LineNumber:   beginLineNumber,
-		}
-	} else if matches := reFindSimpleVariable.FindStringSubmatch(line); matches != nil {
+	if matches := reFindSimpleVariable.FindStringSubmatch(line); matches != nil {
 		ret = Variable{
 			Name:           strings.TrimSpace(matches[1]),
 			Assignment:     strings.TrimSpace(matches[2]),
@@ -158,7 +156,10 @@ func parseRuleOrVariable(scanner *MakefileScanner) (ret interface{}, err error) 
 			LineNumber:     scanner.LineNumber,
 		}
 		scanner.Scan()
-	} else if matches := reFindExpandedVariable.FindStringSubmatch(line); matches != nil {
+		return
+	}
+
+	if matches := reFindExpandedVariable.FindStringSubmatch(line); matches != nil {
 		ret = Variable{
 			Name:           strings.TrimSpace(matches[1]),
 			Assignment:     strings.TrimSpace(matches[2]),
@@ -167,12 +168,87 @@ func parseRuleOrVariable(scanner *MakefileScanner) (ret interface{}, err error) 
 			LineNumber:     scanner.LineNumber,
 		}
 		scanner.Scan()
-	} else {
-		if strings.TrimSpace(line) != "" {
-			logger.Debug(fmt.Sprintf("Unable to match line '%s' to a Rule or Variable", line))
+		return
+	}
+	if matches := reFindOtherVariable.FindStringSubmatch(line); matches != nil {
+		op := strings.TrimSpace(matches[2])
+		isSimple := false // Default to recursive/false
+
+		switch op {
+		case "!=":
+			// Shell assignment is immediate, like simple expansion.
+			isSimple = true
+		case "?=":
+			// Conditional assignment is recursive, just like '='.
+			isSimple = false
+		case "+=":
+			// Append ('+=') inherits its expansion behavior. If the variable was
+			// undefined, '+=' acts like '=' (recursive). Since this parser doesn't
+			// track variable history, we default to recursive (false) as the
+			// safest and most common-case behavior.
+			isSimple = false
+		}
+
+		ret = Variable{
+			Name:           strings.TrimSpace(matches[1]),
+			Assignment:     strings.TrimSpace(matches[3]), // Use index 3 for value
+			SimplyExpanded: isSimple,
+			FileName:       scanner.FileHandle.Name(),
+			LineNumber:     scanner.LineNumber,
 		}
 		scanner.Scan()
+		return
 	}
 
+	if matches := reFindRule.FindStringSubmatch(line); matches != nil {
+		beginLineNumber := scanner.LineNumber - 1
+		scanner.Scan()
+
+		// Handle inline recipe syntax: target: deps ; recipe
+		rawDeps := strings.TrimSpace(matches[2])
+		inlineRecipe := ""
+		if idx := strings.IndexAny(rawDeps, ";"); idx != -1 {
+			inlineRecipe = strings.TrimSpace(rawDeps[idx+1:])
+			rawDeps = strings.TrimSpace(rawDeps[:idx])
+		}
+
+		// Clean up dependencies (space-separated)
+		deps := []string{}
+		for _, d := range strings.Fields(rawDeps) {
+			if d != "" {
+				deps = append(deps, d)
+			}
+		}
+
+		// Collect recipe body (inline + tab-indented)
+		ruleBody := []string{}
+		if inlineRecipe != "" {
+			ruleBody = append(ruleBody, inlineRecipe)
+		}
+
+		// collect tab-indented body lines after the rule
+		for bodyMatches := reFindRuleBody.FindStringSubmatch(scanner.Text()); bodyMatches != nil; bodyMatches = reFindRuleBody.FindStringSubmatch(scanner.Text()) {
+			ruleBody = append(ruleBody, strings.TrimSpace(bodyMatches[1]))
+			scanner.Scan()
+		}
+
+		ret = Rule{
+			Target:       strings.TrimSpace(matches[1]),
+			Dependencies: deps,
+			Body:         ruleBody,
+			FileName:     scanner.FileHandle.Name(),
+			LineNumber:   beginLineNumber,
+		}
+		return
+	}
+
+	// Fallback: unrecognized line
+	if strings.TrimSpace(line) != "" {
+		if strings.Contains(line, ":") && strings.Contains(line, "=") {
+			logger.Debug(fmt.Sprintf("Ambiguous line detected: %q (could be variable or rule)", line))
+		}
+		logger.Debug(fmt.Sprintf("Unable to match line '%s' to a Rule or Variable", line))
+	}
+	scanner.Scan()
 	return
 }
