@@ -28,6 +28,7 @@ func TestJSONFormatter(t *testing.T) {
 		Violation  string `json:"violation"`
 		FileName   string `json:"file_name"`
 		LineNumber int    `json:"line_number"`
+		Severity   string `json:"severity"`
 	}
 
 	err := json.Unmarshal(out.Bytes(), &violationsJSON)
@@ -42,6 +43,8 @@ func TestJSONFormatter(t *testing.T) {
 		assert.NotEmpty(t, v.Violation, "violation should not be empty")
 		assert.NotEmpty(t, v.FileName, "file_name should not be empty")
 		assert.Greater(t, v.LineNumber, 0, "line_number should be greater than 0")
+		assert.NotEmpty(t, v.Severity, "severity should not be empty")
+		assert.Contains(t, []string{"error", "warning", "info"}, v.Severity, "severity should be one of error, warning, or info")
 	}
 
 	// Verify specific violations are present
@@ -61,6 +64,7 @@ func TestJSONFormatter_EmptyViolations(t *testing.T) {
 		Violation  string `json:"violation"`
 		FileName   string `json:"file_name"`
 		LineNumber int    `json:"line_number"`
+		Severity   string `json:"severity"`
 	}
 
 	formatter.Format(rules.RuleViolationList{})
