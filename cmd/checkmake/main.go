@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/checkmake/checkmake/config"
 	"github.com/checkmake/checkmake/formatters"
@@ -28,6 +29,7 @@ var (
 	cfgPath string
 	debug   bool
 	format  string
+	output  string
 )
 
 func newRootCmd() *cobra.Command {
@@ -48,7 +50,9 @@ func newRootCmd() *cobra.Command {
 
 	cmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug mode")
 	cmd.PersistentFlags().StringVar(&cfgPath, "config", "checkmake.ini", "Configuration file to read")
-	cmd.PersistentFlags().StringVar(&format, "format", "", "Output format as a Go text/template template")
+	cmd.PersistentFlags().StringVar(&format, "format", "", "Custom Go template for text output (ignored in JSON mode)")
+	cmd.PersistentFlags().StringVarP(&output, "output", "o", "text", "Output format: 'text' (default) or 'json' (mutually exclusive with --format)")
+	cmd.MarkFlagsMutuallyExclusive("format", "output")
 
 	cmd.Version = fmt.Sprintf("%s %s built at %s by %s with %s",
 		"checkmake", version, buildTime, builder, goversion)
@@ -122,12 +126,35 @@ func runCheckmake(makefiles []string) error {
 	var formatter formatters.Formatter
 	var err error
 
+	// Priority: format flag > output flag > config format > default
 	if format != "" {
 		formatter, err = formatters.NewCustomFormatter(format)
-	} else if f, ferr := cfg.GetConfigValue("format"); ferr == nil {
-		formatter, err = formatters.NewCustomFormatter(f)
 	} else {
-		formatter = formatters.NewDefaultFormatter()
+		// Use output flag if specified, otherwise check config
+		outputMode := strings.ToLower(output)
+		if outputMode == "" {
+			if o, oerr := cfg.GetConfigValue("output"); oerr == nil {
+				outputMode = strings.ToLower(o)
+			} else {
+				outputMode = "text" // default
+			}
+		}
+
+		switch outputMode {
+		case "json":
+			formatter = formatters.NewJSONFormatter()
+		case "text":
+			if format != "" {
+				formatter, err = formatters.NewCustomFormatter(format)
+			} else if f, ferr := cfg.GetConfigValue("format"); ferr == nil {
+				formatter, err = formatters.NewCustomFormatter(f)
+			} else {
+				formatter = formatters.NewDefaultFormatter()
+			}
+		default:
+			return fmt.Errorf("invalid output format: %q (supported: text, json)", outputMode)
+		}
+		logger.Debug(fmt.Sprintf("Using output mode: %s", outputMode))
 	}
 	if err != nil {
 		logger.Error(fmt.Sprintf("Unable to create formatter: %q", err.Error()))

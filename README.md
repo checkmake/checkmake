@@ -17,7 +17,6 @@ not do what you want it to.
 
 % checkmake Makefile foo.mk bar.mk baz.mk
 
-% checkmake --help
 checkmake scans Makefiles and reports potential issues according to configurable rules.
 
 Usage:
@@ -32,8 +31,9 @@ Available Commands:
 Flags:
       --config string   Configuration file to read (default "checkmake.ini")
       --debug           Enable debug mode
-      --format string   Output format as a Go text/template template
+      --format string   Custom Go template for text output (ignored in JSON mode)
   -h, --help            help for checkmake
+  -o, --output string   Output format: 'text' (default) or 'json' (mutually exclusive with --format) (default "text")
   -v, --version         version for checkmake
 
 Use "checkmake [command] --help" for more information about a command.
