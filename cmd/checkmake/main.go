@@ -26,10 +26,12 @@ var (
 	builder   = ""
 	goversion = ""
 
-	cfgPath string
-	debug   bool
-	format  string
-	output  string
+	cfgPath     string
+	debug       bool
+	format      string
+	output      string
+	includeInfo bool
+	errorsOnly  bool
 )
 
 func newRootCmd() *cobra.Command {
@@ -53,6 +55,9 @@ func newRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&format, "format", "", "Custom Go template for text output (ignored in JSON mode)")
 	cmd.PersistentFlags().StringVarP(&output, "output", "o", "text", "Output format: 'text' (default) or 'json' (mutually exclusive with --format)")
 	cmd.MarkFlagsMutuallyExclusive("format", "output")
+	cmd.PersistentFlags().BoolVar(&includeInfo, "include-info", false, "Include info-level violations (style suggestions)")
+	cmd.PersistentFlags().BoolVar(&errorsOnly, "errors-only", false, "Show only error-level violations (suppress warnings and info)")
+	cmd.MarkFlagsMutuallyExclusive("include-info", "errors-only")
 
 	cmd.Version = fmt.Sprintf("%s %s built at %s by %s with %s",
 		"checkmake", version, buildTime, builder, goversion)
@@ -113,14 +118,30 @@ func runCheckmake(makefiles []string) error {
 	cfg := loadConfig()
 	logger.Debug(fmt.Sprintf("Makefiles passed: %q", makefiles))
 
-	var violations rules.RuleViolationList
+	var allViolations rules.RuleViolationList
 	for _, mkf := range makefiles {
 		logger.Info(fmt.Sprintf("Parsing file %q", mkf))
 		makefile, parseErr := parser.Parse(mkf)
 		if parseErr != nil {
 			return fmt.Errorf("failed to parse %q: %w", mkf, parseErr)
 		}
-		violations = append(violations, validator.Validate(makefile, cfg)...)
+		allViolations = append(allViolations, validator.Validate(makefile, cfg)...)
+	}
+
+	// Filter violations based on CLI flags
+	var violations rules.RuleViolationList
+	var errorCount int
+	for _, v := range allViolations {
+		if errorsOnly && v.Severity != rules.SeverityError {
+			continue
+		}
+		if !includeInfo && v.Severity == rules.SeverityInfo {
+			continue
+		}
+		violations = append(violations, v)
+		if v.Severity == rules.SeverityError {
+			errorCount++
+		}
 	}
 
 	var formatter formatters.Formatter
@@ -161,10 +182,14 @@ func runCheckmake(makefiles []string) error {
 		return err
 	}
 
-	// Output
+	// Output violations
 	if len(violations) > 0 {
 		formatter.Format(violations)
-		return fmt.Errorf("violations found (%d)", len(violations))
+	}
+
+	// Exit code: 1 only if there are errors, 0 otherwise
+	if errorCount > 0 {
+		return fmt.Errorf("errors found (%d)", errorCount)
 	}
 
 	return nil

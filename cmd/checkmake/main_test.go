@@ -74,12 +74,15 @@ func TestCheckmake_RunWithViolations(t *testing.T) {
 		err = cmd.Execute()
 	})
 
-	require.Error(t, err, "expected command to fail for a makefile with violations")
+	// Warnings don't cause the command to fail anymore (only errors do)
+	// missing_phony.make has warnings, not errors, so command should succeed
+	require.NoError(t, err, "warnings should not cause command to fail (only errors do)")
 
 	// matching full sentences with table output is complex, search partially
-	assert.Contains(t, out, "Required target", "should mention violation description")
-	assert.Contains(t, out, "declared PHONY.", "should mention target type")
-	assert.Contains(t, out, "phonydeclared", "should mention phonydeclared error")
+	assert.Contains(t, out, "Required", "should mention violation description")
+	assert.Contains(t, out, "PHONY", "should mention target type")
+	assert.Contains(t, out, "phonydeclared", "should mention phonydeclared warning")
+	assert.Contains(t, out, "warning", "should show severity level")
 }
 
 func TestCheckmake_ListRules(t *testing.T) {
@@ -97,11 +100,12 @@ func TestCheckmake_ListRules(t *testing.T) {
 	output := buf.String()
 	t.Logf("list-rules output:\n%s", output)
 
-	assert.Regexp(t, `\s+NAME\s+DESCRIPTION\s+`, output)
-	assert.Regexp(t, `phonydeclared\s+Every target without a body`, output)
-	assert.Regexp(t, `\s+needs\s+to be marked PHONY`, output)
-	assert.Regexp(t, `minphony\s+Minimum required phony`, output)
-	assert.Regexp(t, `\s+must be present(.*)`, output)
+	assert.Regexp(t, `\s+NAME\s+SEVERITY\s+DESCRIPTION\s+`, output)
+	assert.Contains(t, output, "phonydeclared", "should contain phonydeclared rule")
+	assert.Contains(t, output, "warning", "should show severity level")
+	assert.Contains(t, output, "PHONY", "should contain phonydeclared description")
+	assert.Contains(t, output, "minphony", "should contain minphony rule")
+	assert.Contains(t, output, "required", "should contain minphony description")
 }
 
 func TestCheckmake_WithCustomFormatFlag(t *testing.T) {
@@ -192,11 +196,13 @@ func TestCheckmake_MinPhonyDetectsMissingTargets(t *testing.T) {
 		err = cmd.Execute()
 	})
 
-	require.Error(t, err, "expected command to fail when PHONY declares missing targets")
+	// minphony violations are warnings by default, so command should succeed (not fail)
+	require.NoError(t, err, "warnings should not cause command to fail (only errors do)")
 
-	assert.Contains(t, out, "Required target", "should mention missing target violation")
-	assert.Contains(t, out, "from the Makefile", "should identify missing targets")
+	assert.Contains(t, out, "Required", "should mention missing target violation")
+	assert.Contains(t, out, "is missing", "should identify missing targets")
 	assert.Contains(t, out, "minphony", "should include rule name in output")
+	assert.Contains(t, out, "warning", "should show severity level")
 }
 
 func TestCheckmake_WithJSONOutput(t *testing.T) {
@@ -283,8 +289,8 @@ func TestCheckmake_WithTextOutput(t *testing.T) {
 	require.NotEmpty(t, out, "output should not be empty for text format")
 
 	// Text output should contain table-like structure
-	assert.Contains(t, out, "Required target", "should mention violation description")
-	assert.Contains(t, out, "declared PHONY.", "should mention target type")
+	assert.Contains(t, out, "Required", "should mention violation description")
+	assert.Contains(t, out, "PHONY", "should mention target type")
 	assert.Contains(t, out, "phonydeclared", "should mention phonydeclared error")
 }
 
