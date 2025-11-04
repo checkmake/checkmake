@@ -30,7 +30,30 @@ configurable rules being run against a Makefile or a set of `\*.mk` files.
 :    Specify the configuration file to read (default: `checkmake.ini`).
 
 **--format** *format*
-:    Set a custom output format using a Go `text/template` syntax.
+:    Set a custom output format using Go’s `text/template` syntax.
+     This option customizes how violations are displayed in **text mode**.
+     Cannot be used together with **--output** (mutually exclusive).
+
+     Example:
+
+     ```
+     checkmake --format '{{.Rule}}: {{.Violation}}' Makefile
+     ```
+
+**-o**, **--output** *mode*
+:    Select the overall output mode. Supported values:
+
+     - `text` (default): human-readable table or formatted text output.
+     - `json`: structured machine-readable JSON output.
+
+     When **--output=json** is specified, **--format** is ignored and violations
+     are printed as a JSON array.
+
+     Example:
+
+     ```
+     checkmake -o json Makefile | jq
+     ```
 
 # SUBCOMMANDS
 

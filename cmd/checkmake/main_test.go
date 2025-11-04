@@ -3,6 +3,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"log"
 	"os"
@@ -196,4 +197,130 @@ func TestCheckmake_MinPhonyDetectsMissingTargets(t *testing.T) {
 	assert.Contains(t, out, "Required target", "should mention missing target violation")
 	assert.Contains(t, out, "from the Makefile", "should identify missing targets")
 	assert.Contains(t, out, "minphony", "should include rule name in output")
+}
+
+func TestCheckmake_WithJSONOutput(t *testing.T) {
+	out := captureOutput(func() {
+		cmd := newRootCmd()
+		cmd.SilenceErrors = true
+		cmd.SetArgs([]string{
+			"-o", "json",
+			"../../fixtures/missing_phony.make",
+		})
+		_ = cmd.Execute()
+	})
+
+	t.Logf("JSON output:\n%s", out)
+
+	require.NotEmpty(t, out, "output should not be empty for JSON format")
+
+	// Verify it's valid JSON
+	var violations []struct {
+		Rule       string `json:"rule"`
+		Violation  string `json:"violation"`
+		FileName   string `json:"file_name"`
+		LineNumber int    `json:"line_number"`
+	}
+
+	err := json.Unmarshal([]byte(out), &violations)
+	require.NoError(t, err, "output should be valid JSON")
+
+	// Verify we have violations
+	assert.Greater(t, len(violations), 0, "should have at least one violation")
+
+	// Verify structure
+	for _, v := range violations {
+		assert.NotEmpty(t, v.Rule, "rule should not be empty")
+		assert.NotEmpty(t, v.Violation, "violation should not be empty")
+		assert.NotEmpty(t, v.FileName, "file_name should not be empty")
+		assert.Greater(t, v.LineNumber, 0, "line_number should be greater than 0")
+	}
+
+	// Verify specific violations are present
+	ruleNames := make(map[string]bool)
+	for _, v := range violations {
+		ruleNames[v.Rule] = true
+	}
+	assert.Contains(t, ruleNames, "phonydeclared", "should contain phonydeclared violation")
+}
+
+func TestCheckmake_WithJSONOutputFlag(t *testing.T) {
+	out := captureOutput(func() {
+		cmd := newRootCmd()
+		cmd.SilenceErrors = true
+		cmd.SetArgs([]string{
+			"--output", "json",
+			"../../fixtures/missing_phony.make",
+		})
+		_ = cmd.Execute()
+	})
+
+	require.NotEmpty(t, out, "output should not be empty for JSON format")
+
+	// Verify it's valid JSON
+	var violations []struct {
+		Rule       string `json:"rule"`
+		Violation  string `json:"violation"`
+		FileName   string `json:"file_name"`
+		LineNumber int    `json:"line_number"`
+	}
+
+	err := json.Unmarshal([]byte(out), &violations)
+	require.NoError(t, err, "output should be valid JSON")
+}
+
+func TestCheckmake_WithTextOutput(t *testing.T) {
+	out := captureOutput(func() {
+		cmd := newRootCmd()
+		cmd.SilenceErrors = true
+		cmd.SetArgs([]string{
+			"-o", "text",
+			"../../fixtures/missing_phony.make",
+		})
+		_ = cmd.Execute()
+	})
+
+	require.NotEmpty(t, out, "output should not be empty for text format")
+
+	// Text output should contain table-like structure
+	assert.Contains(t, out, "Required target", "should mention violation description")
+	assert.Contains(t, out, "declared PHONY.", "should mention target type")
+	assert.Contains(t, out, "phonydeclared", "should mention phonydeclared error")
+}
+
+func TestCheckmake_WithInvalidOutput(t *testing.T) {
+	cmd := newRootCmd()
+	cmd.SilenceErrors = true
+	cmd.SetArgs([]string{
+		"-o", "invalid",
+		"../../fixtures/missing_phony.make",
+	})
+
+	err := cmd.Execute()
+	require.Error(t, err, "expected command to fail with invalid output format")
+	assert.Contains(t, err.Error(), "invalid output format", "error should mention invalid output format")
+}
+
+func TestCheckmake_FormatAndOutputAreMutuallyExclusive(t *testing.T) {
+	cmd := newRootCmd()
+	cmd.SetArgs([]string{
+		"--format", "{{.Rule}}: {{.Violation}}",
+		"--output", "json",
+		"../../fixtures/missing_phony.make",
+	})
+
+	var errBuf bytes.Buffer
+	cmd.SetErr(&errBuf)
+
+	err := cmd.Execute()
+	require.Error(t, err, "expected command to fail when both format and output flags are set")
+
+	errorOutput := errBuf.String()
+	require.NotEmpty(t, errorOutput, "should produce error output")
+
+	// Cobra handles exclusivity and prints a standard error message.
+	// The actual message format:
+	// "if any flags in the group [format output] are set none of the others can be; [format output] were all set"
+	assert.Contains(t, errorOutput, "[format output]", "should reference the conflicting flags")
+	assert.Contains(t, errorOutput, "can be", "should mention that flags cannot be set together")
 }
