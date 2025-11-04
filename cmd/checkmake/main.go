@@ -199,7 +199,9 @@ func listRules(w io.Writer, cfg *config.Config) {
 	data := [][]string{}
 	for _, rule := range rules.GetRulesSorted() {
 		cfgForRule := cfg.GetRuleConfig(rule.Name())
-		data = append(data, []string{rule.Name(), rule.Description(cfgForRule)})
+		// Get severity from config if set, otherwise use default
+		severity := rules.GetSeverityFromConfig(rule, cfgForRule)
+		data = append(data, []string{rule.Name(), string(severity), rule.Description(cfgForRule)})
 	}
 
 	table := tablewriter.NewTable(w,
@@ -214,7 +216,7 @@ func listRules(w io.Writer, cfg *config.Config) {
 		tablewriter.WithRowAutoWrap(tw.WrapNormal),
 		tablewriter.WithMaxWidth(72),
 	)
-	table.Header("Name", "Description")
+	table.Header("Name", "Severity", "Description")
 
 	if err := table.Bulk(data); err != nil {
 		log.Fatalf("Bulk append failed: %v", err)
