@@ -3,22 +3,25 @@
 [![Build Status](https://github.com/checkmake/checkmake/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/checkmake/checkmake/actions)
 [![Coverage Status](https://coveralls.io/repos/github/mrtazz/checkmake/badge.svg?branch=master)](https://coveralls.io/github/mrtazz/checkmake?branch=master)
 [![Code Climate](https://codeclimate.com/github/mrtazz/checkmake/badges/gpa.svg)](https://codeclimate.com/github/mrtazz/checkmake)
+[![Go Report Card](https://goreportcard.com/badge/github.com/checkmake/checkmake)](https://goreportcard.com/report/github.com/checkmake/checkmake)
 [![Packagecloud](https://img.shields.io/badge/packagecloud-available-brightgreen.svg)](https://packagecloud.io/mrtazz/checkmake)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](http://opensource.org/licenses/MIT)
 
 ## Overview
-checkmake is a tool for linting and checking Makefiles. It may
-not do what you want it to.
+**checkmake** is a linter for Makefiles. It scans Makefiles for potential issues based on configurable rules.
 
 ## Usage
 
-```
+```console
 % checkmake Makefile
-
 % checkmake Makefile foo.mk bar.mk baz.mk
+```
 
-checkmake scans Makefiles and reports potential issues according to configurable rules.
+checkmake analyzes one or more Makefiles and reports potential issues according to configurable rules.
 
+
+### Command-line options
+```console
 Usage:
   checkmake [flags] [makefile...]
   checkmake [command]
@@ -37,7 +40,10 @@ Flags:
   -v, --version         version for checkmake
 
 Use "checkmake [command] --help" for more information about a command.
+```
 
+### Example output
+```console
 % checkmake fixtures/missing_phony.make
       RULE                 DESCRIPTION                      FILE NAME            LINE NUMBER
   minphony        Missing required phony target    fixtures/missing_phony.make   21
@@ -50,12 +56,12 @@ Use "checkmake [command] --help" for more information about a command.
 
 ## Docker usage
 Build the image, or pull it:
-```sh
+```console
 docker build --build-arg BUILDER_NAME='Your Name' --build-arg BUILDER_EMAIL=your.name@example.com . -t checker
 ```
 
 Then run it with your Makefile attached, below is an example of it assuming the Makefile is in your current working directory:
-```sh
+```console
 docker run -v "$PWD"/Makefile:/Makefile checker
 ```
 
@@ -91,7 +97,7 @@ There are two hooks available:
 
 Then, run `pre-commit` as usual as a part of `git commit` or explicitly, for example:
 
-```sh
+```console
 pre-commit run --all-files
 ```
 
@@ -142,34 +148,41 @@ jobs:
 
 ## Installation
 
-### Requirements
-The [pandoc](https://pandoc.org/) document converter utility is required to run checkmake. You can find out if you have it via `which pandoc`. [Install pandoc](https://pandoc.org/installing.html) if the command was not found.
-
-## With Go
+### With Go
 
 With `go` 1.16 or higher:
 
-```sh
+```console
 go install github.com/checkmake/checkmake/cmd/checkmake@latest
 checkmake Makefile
 ```
 
 Or alternatively, run it directly:
 
-```sh
+```console
 go run github.com/checkmake/checkmake/cmd/checkmake@latest Makefile
 ```
 
-### Packages
-There are packages for linux up [on packagecloud.io](https://packagecloud.io/mrtazz/checkmake) or build it yourself with the steps below.
+### From Packages
+checkmake is available in many Linux distributions and package managers. See [Repology](https://repology.org/project/checkmake/versions) for full list:
+
+[![Repology](https://repology.org/badge/vertical-allrepos/checkmake.svg?exclude_unsupported=1)](https://repology.org/project/checkmake/versions)
+
+Packages are also available [on packagecloud.io](https://packagecloud.io/mrtazz/checkmake).
 
 ### Build
-To build checkmake you will need to have [golang](https://golang.org/) installed. Once you have Go installed, you can simply clone the repo and build the binary and man page yourself with the following commands.
+You'll need [Go](https://golang.org/) installed.
 
-```sh
+```console
 git clone https://github.com/checkmake/checkmake
 cd checkmake
-make
+make checkmake
+```
+
+To build the man page (optional), install [pandoc](https://pandoc.org/installing.html) and run:
+
+```console
+make checkmake.1
 ```
 
 ## Use in CI
