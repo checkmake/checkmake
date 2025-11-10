@@ -81,21 +81,55 @@ jobs:
 
   docker:
     name: docker
-    env:
-      BUILDER_NAME: "GitHub Actions"
-      BUILDER_EMAIL: noreply@actions.github.com
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v5
-    - name: Build the Docker image
-      run: docker build --build-arg BUILDER_NAME=CI --build-arg BUILDER_EMAIL=ci@test.only . --file Dockerfile --tag mrtazz/checkmake:${GITHUB_SHA} --tag mrtazz/checkmake:latest
 
-    - name: push the docker image to docker hub
-      if: github.ref == 'refs/heads/main'
+    - name: Determine if pre-release
+      id: prerelease
       run: |
-        echo ${{ secrets.DOCKER_HUB_TOKEN }} | docker login -u mrtazz --password-stdin
-        docker push mrtazz/checkmake:${GITHUB_SHA}
-        docker push mrtazz/checkmake:latest
-        docker logout hub.docker.com
+        TAG=${GITHUB_REF#refs/tags/}
+        # Check if tag contains pre-release indicators
+        if [[ "$TAG" =~ -(next|alpha|beta|rc|dev|snapshot) ]]; then
+          echo "is_prerelease=true" >> $GITHUB_OUTPUT
+          echo "Tag $TAG is a pre-release, skipping 'latest' tag"
+        else
+          echo "is_prerelease=false" >> $GITHUB_OUTPUT
+          echo "Tag $TAG is a stable release, will tag as 'latest'"
+        fi
+        echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: mrtazz
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+    - name: Prepare Docker tags
+      id: docker_tags
+      run: |
+        TAG=${{ steps.prerelease.outputs.tag }}
+        SHA=${{ github.sha }}
+        TAGS="mrtazz/checkmake:${TAG},mrtazz/checkmake:${SHA}"
+        if [ "${{ steps.prerelease.outputs.is_prerelease }}" = "false" ]; then
+          TAGS="${TAGS},mrtazz/checkmake:latest"
+        fi
+        echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+        echo "Docker tags: ${TAGS}"
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        build-args: |
+          BUILDER_NAME=GitHub Actions
+          BUILDER_EMAIL=noreply@actions.github.com
+        push: true
+        tags: ${{ steps.docker_tags.outputs.tags }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
