@@ -33,7 +33,7 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         choco install -y make sed
-        choco install -y pandoc --version 2.7.3
+        choco install -y pandoc
 
     - name: Install dependencies (macOS)
       if: matrix.os == 'macos-latest'
@@ -43,8 +43,8 @@ jobs:
     - name: Install dependencies (Linux/Ubuntu)
       if: matrix.os == 'ubuntu-latest'
       run: |
-        sudo wget https://github.com/jgm/pandoc/releases/download/2.7.3/pandoc-2.7.3-1-amd64.deb
-        sudo dpkg -i pandoc-2.7.3-1-amd64.deb
+        sudo apt update
+        sudo apt install -y pandoc
 
     - name: Build and run unit tests
       run: make clean all test
