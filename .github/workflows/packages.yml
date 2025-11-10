@@ -27,9 +27,8 @@ jobs:
 
     - name: install dependencies
       run: |
-        sudo wget https://github.com/jgm/pandoc/releases/download/2.7.3/pandoc-2.7.3-1-amd64.deb
-        sudo dpkg -i pandoc-2.7.3-1-amd64.deb
-        rm -f pandoc-2.7.3-1-amd64.deb
+        sudo apt update
+        sudo apt install -y pandoc
         sudo gem install fpm package_cloud
 
     - name: build and run unit tests
@@ -62,8 +61,8 @@ jobs:
 
     - name: install dependencies
       run: |
-        sudo wget https://github.com/jgm/pandoc/releases/download/2.7.3/pandoc-2.7.3-1-amd64.deb
-        sudo dpkg -i pandoc-2.7.3-1-amd64.deb
+        sudo apt update
+        sudo apt install -y pandoc
 
     - name: build for platforms
       run: |
