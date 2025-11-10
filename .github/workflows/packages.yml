@@ -42,9 +42,10 @@ jobs:
   release:
     name: github
     runs-on: ubuntu-latest
-    env:
-      BUILDER_NAME: "GitHub Actions"
-      BUILDER_EMAIL: noreply@actions.github.com
+    permissions:
+      contents: write
+      attestations: write
+      id-token: write
 
     steps:
 
@@ -57,26 +58,39 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v5
       with:
-        fetch-depth: 1
+        fetch-depth: 0
 
-    - name: install dependencies
+    - name: Install pandoc
       run: |
         sudo apt update
         sudo apt install -y pandoc
 
-    - name: build for platforms
-      run: |
-        BUILD_GOARCH=amd64 BUILD_GOOS=freebsd make build-standalone
-        BUILD_GOARCH=amd64 BUILD_GOOS=linux   make build-standalone
-        BUILD_GOARCH=amd64 BUILD_GOOS=darwin  make build-standalone
-        BUILD_GOARCH=arm64 BUILD_GOOS=darwin  make build-standalone
-        BUILD_GOARCH=amd64 BUILD_GOOS=windows make build-standalone
-        BUILD_GOARCH=arm64 BUILD_GOOS=windows make build-standalone
+    - name: Generate manpage
+      run: make checkmake.1
 
-    - name: create release
-      run: make github-release
+    - name: Prepare release notes
+      run: |
+        # Extract version from tag (tags are 0.3.0 format, not v0.3.0)
+        # Release notes files should be named 0.3.0.md (matching tag format)
+        VERSION=${GITHUB_REF#refs/tags/}
+        if [ -f "docs/releases/${VERSION}.md" ]; then
+          cp "docs/releases/${VERSION}.md" RELEASE_NOTES.md
+          echo "Release notes found for ${VERSION}"
+        else
+          echo "# Release ${VERSION}" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "See [CHANGELOG.md](CHANGELOG.md) for details." >> RELEASE_NOTES.md
+          echo "Release notes file not found, using placeholder"
+        fi
+
+    - name: Run GoReleaser
+      uses: goreleaser/goreleaser-action@v6
+      with:
+        version: latest
+        args: release --clean
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GOVERSION: ${{ steps.goversion.outputs.version }}
 
   docker:
     name: docker

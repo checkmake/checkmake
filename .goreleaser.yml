@@ -1,0 +1,71 @@
+# GoReleaser configuration for checkmake
+# See https://goreleaser.com for more information
+
+project_name: checkmake
+
+builds:
+  - id: checkmake
+    main: ./cmd/checkmake
+    binary: checkmake
+    goos:
+      - freebsd
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    # Exclude Windows ARM64, and only include arm64 for linux and darwin
+    ignore:
+      - goos: windows
+        goarch: arm64
+      - goos: freebsd
+        goarch: arm64
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X 'main.version={{.Version}}'
+      - -X 'main.buildTime={{.Date}}'
+      - -X 'main.builder=GitHub Actions <noreply@actions.github.com>'
+      - -X 'main.goversion={{.Env.GOVERSION}}'
+    hooks:
+      pre:
+        - go mod download
+        - go mod verify
+
+archives:
+  - id: default
+    name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - '{{ .ArtifactName }}'
+      - 'README.md'
+      - 'LICENSE'
+      - 'checkmake.1'
+    builds:
+      - checkmake
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+release:
+  mode: replace
+  name_template: 'Release {{ .Tag }}'
+  # Read release notes from file prepared by workflow
+  notes: RELEASE_NOTES.md
+  footer: |
+    ---
+    
+    Full changelog: https://github.com/checkmake/checkmake/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+# Snapshot configuration (for testing without tags)
+# Run: goreleaser release --snapshot
+# This creates a snapshot release with the name template below
+# Note: Tags like "0.3.0-next" are automatically recognized as pre-releases by GoReleaser
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
