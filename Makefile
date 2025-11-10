@@ -135,9 +135,8 @@ local-install:
 packages: local-install rpm deb
 
 deploy-packages: packages
-	package_cloud push mrtazz/$(NAME)/el/8 *.rpm
-	package_cloud push mrtazz/$(NAME)/debian/trixie *.deb
-	package_cloud push mrtazz/$(NAME)/ubuntu/hirsute *.deb
+	package_cloud push mrtazz/$(NAME)/rpm_any *.rpm
+	package_cloud push mrtazz/$(NAME)/any/any *.deb
 
 
 rpm: $(SOURCES)
