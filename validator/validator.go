@@ -21,13 +21,22 @@ import (
 
 // Validate let's you validate a passed in Makefile with the provided config
 func Validate(makefile parser.Makefile, cfg *config.Config) (ret rules.RuleViolationList) {
-	rules := rules.GetRegisteredRules()
+	registeredRules := rules.GetRegisteredRules()
 
-	for name, rule := range rules {
+	for name, rule := range registeredRules {
 		logger.Debug(fmt.Sprintf("Running rule '%s'...", name))
 		ruleConfig := cfg.GetRuleConfig(name)
 		if ruleConfig["disabled"] != "true" {
-			ret = append(ret, rule.Run(makefile, ruleConfig)...)
+			violations := rule.Run(makefile, ruleConfig)
+			// Assign severity to each violation if not already set by the rule
+			defaultSeverity := rules.GetSeverityFromConfig(rule, ruleConfig)
+			for i := range violations {
+				// If severity is not set (empty string), use the default/configured severity
+				if violations[i].Severity == "" {
+					violations[i].Severity = defaultSeverity
+				}
+			}
+			ret = append(ret, violations...)
 		}
 	}
 
