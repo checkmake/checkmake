@@ -14,10 +14,10 @@ jobs:
 
     steps:
 
-    - name: Set up Go 1.13
+    - name: Set up Go
       uses: actions/setup-go@v6
       with:
-        go-version: 1.13
+        go-version: 'stable'
       id: go
 
     - name: Check out code
@@ -27,9 +27,8 @@ jobs:
 
     - name: install dependencies
       run: |
-        sudo wget https://github.com/jgm/pandoc/releases/download/2.7.3/pandoc-2.7.3-1-amd64.deb
-        sudo dpkg -i pandoc-2.7.3-1-amd64.deb
-        rm -f pandoc-2.7.3-1-amd64.deb
+        sudo apt update
+        sudo apt install -y pandoc
         sudo gem install fpm package_cloud
 
     - name: build and run unit tests
@@ -49,10 +48,10 @@ jobs:
 
     steps:
 
-    - name: Set up Go 1.17
+    - name: Set up Go
       uses: actions/setup-go@v6
       with:
-        go-version: 1.17
+        go-version: 'stable'
       id: go
 
     - name: Check out code
@@ -62,8 +61,8 @@ jobs:
 
     - name: install dependencies
       run: |
-        sudo wget https://github.com/jgm/pandoc/releases/download/2.7.3/pandoc-2.7.3-1-amd64.deb
-        sudo dpkg -i pandoc-2.7.3-1-amd64.deb
+        sudo apt update
+        sudo apt install -y pandoc
 
     - name: build for platforms
       run: |
