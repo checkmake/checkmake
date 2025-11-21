@@ -40,6 +40,11 @@ func (r *MinPhony) Description(cfg rules.RuleConfig) string {
 	return fmt.Sprintf("Minimum required phony targets must be present (%s).", strings.Join(r.required, ","))
 }
 
+// DefaultSeverity returns the default severity for this rule.
+func (r *MinPhony) DefaultSeverity() rules.Severity {
+	return rules.SeverityWarning // Convention, not correctness
+}
+
 // Run executes the rule logic.
 // It ensures all required phony targets are both defined as rules
 // and declared as PHONY. Missing or undeclared targets trigger violations.

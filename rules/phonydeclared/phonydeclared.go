@@ -27,6 +27,11 @@ func (r *Phonydeclared) Description(cfg rules.RuleConfig) string {
 	return "Every target without a body needs to be marked PHONY"
 }
 
+// DefaultSeverity returns the default severity for this rule.
+func (r *Phonydeclared) DefaultSeverity() rules.Severity {
+	return rules.SeverityWarning // Non-phony empty targets can cause incorrect rebuilds
+}
+
 // Run executes the rule logic
 func (r *Phonydeclared) Run(makefile parser.Makefile, config rules.RuleConfig) rules.RuleViolationList {
 	ret := rules.RuleViolationList{}

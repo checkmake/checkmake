@@ -31,6 +31,11 @@ func (r *UniqueTargets) Description(cfg rules.RuleConfig) string {
 	return "Targets should be uniquely defined; duplicates can cause recipe overrides or unintended merges."
 }
 
+// DefaultSeverity returns the default severity for this rule.
+func (r *UniqueTargets) DefaultSeverity() rules.Severity {
+	return rules.SeverityError // Duplicate target definitions are errors
+}
+
 // Run detects non-unique target definitions, optionally skipping ignored ones.
 func (r *UniqueTargets) Run(makefile parser.Makefile, cfg rules.RuleConfig) rules.RuleViolationList {
 	seen := make(map[string]int)
@@ -50,6 +55,11 @@ func (r *UniqueTargets) Run(makefile parser.Makefile, cfg rules.RuleConfig) rule
 	}
 
 	for _, rule := range makefile.Rules {
+		// Skip .PHONY declarations - they're handled by the multiplephony rule
+		if rule.Target == ".PHONY" || rule.Target == "PHONY" {
+			continue
+		}
+
 		// Skip ignored targets
 		if ignoredTargets[rule.Target] {
 			continue
@@ -66,6 +76,7 @@ func (r *UniqueTargets) Run(makefile parser.Makefile, cfg rules.RuleConfig) rule
 				Violation:  fmt.Sprintf(`Target "%s" defined multiple times (lines %d and %d).`, rule.Target, prevLine, rule.LineNumber),
 				FileName:   makefile.FileName,
 				LineNumber: rule.LineNumber,
+				Severity:   rules.SeverityError, // Duplicate targets are errors
 			})
 		} else {
 			seen[rule.Target] = rule.LineNumber
