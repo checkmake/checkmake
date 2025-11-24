@@ -26,7 +26,12 @@ func (f *DefaultFormatter) Format(violations rules.RuleViolationList) {
 	data := make([][]string, len(violations))
 
 	for idx, val := range violations {
+		severityStr := string(val.Severity)
+		if severityStr == "" {
+			severityStr = "error" // Default to error for backward compatibility
+		}
 		data[idx] = []string{
+			severityStr,
 			val.Rule,
 			val.Violation,
 			val.FileName,
@@ -47,7 +52,7 @@ func (f *DefaultFormatter) Format(violations rules.RuleViolationList) {
 		tablewriter.WithMaxWidth(80),
 	)
 
-	table.Header("Rule", "Description", "File Name", "Line Number")
+	table.Header("Severity", "Rule", "Description", "File Name", "Line Number")
 
 	if err := table.Bulk(data); err != nil {
 		log.Fatalf("Bulk append failed: %v", err)

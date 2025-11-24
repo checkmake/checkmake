@@ -38,6 +38,11 @@ func (m *MaxBodyLength) Description(cfg rules.RuleConfig) string {
 	return fmt.Sprintf("Target bodies should be kept simple and short (no more than %d lines).", maxBodyLength)
 }
 
+// DefaultSeverity returns the default severity for this rule.
+func (m *MaxBodyLength) DefaultSeverity() rules.Severity {
+	return rules.SeverityInfo // Readability guideline
+}
+
 // Run executes the rule logic
 func (m *MaxBodyLength) Run(makefile parser.Makefile, config rules.RuleConfig) rules.RuleViolationList {
 	ret := rules.RuleViolationList{}

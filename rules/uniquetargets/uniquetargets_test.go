@@ -83,6 +83,8 @@ func TestPhonyTargetsAreIgnored(t *testing.T) {
 	rule := UniqueTargets{}
 	ret := rule.Run(makefile, rules.RuleConfig{})
 
+	// Should only report duplicate "build" target - .PHONY duplicates are handled by multiplephony rule
 	assert.Equal(t, 1, len(ret), "only non-.PHONY duplicates should trigger violations")
 	assert.Contains(t, ret[0].Violation, `"build" defined multiple times`)
+	assert.Equal(t, rules.SeverityError, ret[0].Severity)
 }
