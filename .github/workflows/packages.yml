@@ -21,7 +21,7 @@ jobs:
       id: go
 
     - name: Check out code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         fetch-depth: 1
 
@@ -55,7 +55,7 @@ jobs:
       id: go
 
     - name: Check out code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         fetch-depth: 1
 
@@ -87,7 +87,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Build the Docker image
       run: docker build --build-arg BUILDER_NAME=CI --build-arg BUILDER_EMAIL=ci@test.only . --file Dockerfile --tag mrtazz/checkmake:${GITHUB_SHA} --tag mrtazz/checkmake:latest
 
