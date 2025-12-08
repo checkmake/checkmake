@@ -24,6 +24,26 @@ GOLANGCI_LINT_BIN:= $(BUILD_GOPATH)/bin/golangci-lint
 
 
 
+IMAGE_REGISTRY ?= quay.io
+REGISTRY_NAMESPACE ?= $(NAME)
+
+IMAGE_NAME ?= checkmake
+
+IMAGE_VERSION_TAG ?= latest
+
+IMG ?= $(IMAGE_REGISTRY)/$(REGISTRY_NAMESPACE)/$(IMAGE_NAME):$(IMAGE_VERSION_TAG)
+
+
+ifeq ($(origin CONTAINER_CMD),undefined)
+# try podman first
+CONTAINER_CMD=$(shell podman version >/dev/null 2>&1 && echo podman)
+ifeq ($(CONTAINER_CMD),)
+#try docker if podman is not available
+CONTAINER_CMD=$(shell docker version >/dev/null 2>&1 && echo docker)
+endif
+endif
+
+
 ifeq ($(BUILD_GOOS),windows)
 	EXTENSION := .exe
 endif
@@ -193,3 +213,14 @@ pizza: # ignore checkmake
 	@echo ""
 
 .PHONY: all test rpm deb install local-install packages coverage clean-deps clean clean-docs pizza binaries
+
+.PHONY: image-build
+image-build:
+	$(CONTAINER_CMD) build --build-arg BUILDER_NAME='$(BUILDER_NAME)' --build-arg BUILDER_EMAIL='$(EMAIL)' -t $(IMG) -f Containerfile .
+
+.PHONY: image-push
+image-push:
+	$(CONTAINER_CMD) push $(IMG)
+
+
+

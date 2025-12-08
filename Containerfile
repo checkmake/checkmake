@@ -1,16 +1,17 @@
-FROM golang:1.25 as builder
+FROM golang:1.25 AS builder
 
 ARG BUILDER_NAME
 ARG BUILDER_EMAIL
 
 ENV GOOS=linux GOARCH=amd64 CGO_ENABLED=0
 COPY . /go/src/github.com/checkmake/checkmake
-
 WORKDIR /go/src/github.com/checkmake/checkmake
-RUN make binaries
+RUN make BUILDER_NAME="${BUILDER_NAME}" BUILDER_EMAIL="${BUILDER_EMAIL}" clean binaries
 RUN make test
 
 FROM alpine:3.23
+
+FROM alpine:3.22
 RUN apk add --no-cache make
 USER nobody
 
