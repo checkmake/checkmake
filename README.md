@@ -54,15 +54,43 @@ Use "checkmake [command] --help" for more information about a command.
                   declared PHONY.
 ```
 
-## Docker usage
-Build the image, or pull it:
+## Container  usage
+
+building or running a container image can be done with docker and podman.
+
+
+# building  an image
+
+
 ```console
 docker build --build-arg BUILDER_NAME='Your Name' --build-arg BUILDER_EMAIL=your.name@example.com . -t checker
 ```
 
-Then run it with your Makefile attached, below is an example of it assuming the Makefile is in your current working directory:
+Alternatively, the image can be built with the make target `image-build` :
+
 ```console
-docker run -v "$PWD"/Makefile:/Makefile checker
+$ BUILDER_NAME='Your Name' BUILDER_EMAIL='your@mail' image-build
+```
+
+By default, the image tag is constructed as `IMAGE_REGISTRY/checkmake/checkmake:IMAGE_VERSION_TAG`
+
+The image registry defaults to `quay.io` but can be overridden by the `IMAGE_BUILD make variable.
+
+The image version tag defaults to `latest` and can be overridden with the `IMAGE_VERSION_TAG`.
+
+The container command used for building (docker or podman) is auto-detected with a preference for podman but can be overridden by the make variable `CONTAINER_CMD`.
+
+# publishing an image
+
+The locally built image can be published with a `make image-push`command corresponding to the previously described `make image-build`command or alrenatively directly using `docker push` or `podman push`  
+
+
+# running checkmake in container
+
+
+Then checkmake can be run in a contaner based on a locally built or pulled image with a  Makefile attached. below is an example of it assuming the Makefile is in the  current working directory:
+```console
+docker run -v "$PWD"/Makefile:/Makefile quay.io/checkmake/checkmake:latest 
 ```
 
 ## `pre-commit` usage
