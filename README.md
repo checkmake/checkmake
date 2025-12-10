@@ -84,6 +84,11 @@ The container command used for building (docker or podman) is auto-detected with
 
 The locally built image can be published with a `make image-push`command corresponding to the previously described `make image-build`command or alrenatively directly using `docker push` or `podman push`  
 
+# published images on quay
+
+Official images are published on [quay.io](https://quay.io/repository/checkmake/checkmake) 
+
+
 
 # running checkmake in container
 
