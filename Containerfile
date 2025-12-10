@@ -10,8 +10,6 @@ RUN make BUILDER_NAME="${BUILDER_NAME}" BUILDER_EMAIL="${BUILDER_EMAIL}" clean b
 RUN make test
 
 FROM alpine:3.23
-
-FROM alpine:3.22
 RUN apk add --no-cache make
 USER nobody
 
