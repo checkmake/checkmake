@@ -74,9 +74,9 @@ $ BUILDER_NAME='Your Name' BUILDER_EMAIL='your@mail' image-build
 
 By default, the image tag is constructed as `IMAGE_REGISTRY/checkmake/checkmake:IMAGE_VERSION_TAG`
 
-The image registry defaults to `quay.io` but can be overridden by the `IMAGE_BUILD make variable.
+The image registry defaults to `quay.io` but can be overridden by the `IMAGE_REGISTRY` make variable.
 
-The image version tag defaults to `latest` and can be overridden with the `IMAGE_VERSION_TAG`.
+The image version tag defaults to `latest` and can be overridden with the make variable  `IMAGE_VERSION_TAG`.
 
 The container command used for building (docker or podman) is auto-detected with a preference for podman but can be overridden by the make variable `CONTAINER_CMD`.
 
@@ -95,8 +95,18 @@ Official images are published on [quay.io](https://quay.io/repository/checkmake/
 
 Then checkmake can be run in a contaner based on a locally built or pulled image with a  Makefile attached. below is an example of it assuming the Makefile is in the  current working directory:
 ```console
-docker run -v "$PWD"/Makefile:/Makefile quay.io/checkmake/checkmake:latest 
+docker run --workdir / -v "$PWD"/Makefile:/Makefile quay.io/checkmake/checkmake:latest 
 ```
+
+Variant for using an additional config file:
+
+```console
+docker run --workdir / -v "$PWD"/Makefile:/Makefile -v "$PWD"/checkmake.ini:/checkmake.ini  quay.io/checkmake/checkmake:latest
+```
+Note that this uses the default config file name `checkmake.ini` in the CWD so that it will be picked up by checkmake automatically.
+
+
+
 
 ## `pre-commit` usage
 
