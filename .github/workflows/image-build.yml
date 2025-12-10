@@ -38,6 +38,6 @@ jobs:
       - name: Build the container image
         run: make CONTAINER_CMD=docker image-build
       - name: log in to quay.io
-        run: echo logging in.
+        run: echo "${{ secrets.QUAY_PASS }}" | docker login -u "${{ secrets.QUAY_USER }}" --password-stdin quay.io
       - name: Push  the container image to quay.io
         run: echo "make CONTAINER_CMD=docker  image-push"
