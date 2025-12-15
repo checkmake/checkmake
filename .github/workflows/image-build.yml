@@ -26,7 +26,7 @@ jobs:
 
     steps:
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build the container image
         run: make CONTAINER_CMD=docker  image-build
   # build and push images to quay.io - only on push, not on PRs.
@@ -38,7 +38,7 @@ jobs:
       BUILDER_EMAIL: noreply@actions.github.com
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Build the container image
         run: make CONTAINER_CMD=docker image-build
       - name: log in to quay.io
