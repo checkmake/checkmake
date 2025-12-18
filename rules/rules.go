@@ -14,13 +14,24 @@ import (
 //   - Description(cfg RuleConfig): a human-readable explanation of what the rule checks for.
 //     Implementations should adapt the description based on the provided configuration,
 //     but must remain safe to call with a nil config (using default values).
+//   - DefaultSeverity(): returns the default severity level for violations from this rule.
 //   - Run(makefile, cfg): performs the actual validation on the parsed Makefile,
 //     returning a list of any violations found.
 type Rule interface {
 	Name() string
 	Description(cfg RuleConfig) string
+	DefaultSeverity() Severity
 	Run(parser.Makefile, RuleConfig) RuleViolationList
 }
+
+// Severity represents the severity level of a rule violation
+type Severity string
+
+const (
+	SeverityError   Severity = "error"
+	SeverityWarning Severity = "warning"
+	SeverityInfo    Severity = "info"
+)
 
 // RuleViolation represents a basic validation failure
 type RuleViolation struct {
@@ -28,6 +39,7 @@ type RuleViolation struct {
 	Violation  string
 	FileName   string
 	LineNumber int
+	Severity   Severity
 }
 
 // RuleViolationList is a list of Violation types and the return type of a
@@ -73,4 +85,18 @@ func GetRulesSorted() []Rule {
 		sorted = append(sorted, ruleRegistry[name])
 	}
 	return sorted
+}
+
+// GetSeverityFromConfig returns the severity for a rule from its config, or the default if not specified.
+func GetSeverityFromConfig(rule Rule, cfg RuleConfig) Severity {
+	if cfg != nil {
+		if severityStr, ok := cfg["severity"]; ok {
+			severity := Severity(severityStr)
+			// Validate severity value
+			if severity == SeverityError || severity == SeverityWarning || severity == SeverityInfo {
+				return severity
+			}
+		}
+	}
+	return rule.DefaultSeverity()
 }

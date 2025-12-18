@@ -33,6 +33,11 @@ func (r *Timestampexpanded) Description(cfg rules.RuleConfig) string {
 	return "timestamp variables should be simply expanded"
 }
 
+// DefaultSeverity returns the default severity for this rule.
+func (r *Timestampexpanded) DefaultSeverity() rules.Severity {
+	return rules.SeverityWarning // Reproducibility issue
+}
+
 // Run executes the rule logic
 func (r *Timestampexpanded) Run(makefile parser.Makefile, config rules.RuleConfig) rules.RuleViolationList {
 	ret := rules.RuleViolationList{}

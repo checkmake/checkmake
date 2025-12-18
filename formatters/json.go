@@ -26,15 +26,21 @@ func (f *JSONFormatter) Format(violations rules.RuleViolationList) {
 		Violation  string `json:"violation"`
 		FileName   string `json:"file_name"`
 		LineNumber int    `json:"line_number"`
+		Severity   string `json:"severity"`
 	}
 
 	violationsJSON := make([]ViolationJSON, len(violations))
 	for i, v := range violations {
+		severityStr := string(v.Severity)
+		if severityStr == "" {
+			severityStr = "error" // Default to error for backward compatibility
+		}
 		violationsJSON[i] = ViolationJSON{
 			Rule:       v.Rule,
 			Violation:  v.Violation,
 			FileName:   v.FileName,
 			LineNumber: v.LineNumber,
+			Severity:   severityStr,
 		}
 	}
 
