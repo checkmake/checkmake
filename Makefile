@@ -191,8 +191,15 @@ build-standalone: all $(RELEASE_ARTIFACTS_DIR)
 	mv checkmake $(CHECKMAKE_RELEASE_BINARY)
 	shasum -a 256 $(CHECKMAKE_RELEASE_BINARY) >> $(RELEASE_ARTIFACTS_DIR)/$(CHECKSUM_FILE)
 
+
+.PHONY: clean-release-artifacts
+clean-release-artifacts:
+	rm -rf $(RELEASE_ARTIFACTS_DIR)
+.PHONY: release-artifacts
+release-artifacts: clean-release-artifacts
+	hack/create-release-artifacts.sh
 .PHONY: github-release
-github-release:
+github-release: release-artifacts
 	gh release create $(VERSION) --title 'Release $(VERSION)' --notes-file docs/releases/$(VERSION).md $(RELEASE_ARTIFACTS_DIR)/*
 
 
