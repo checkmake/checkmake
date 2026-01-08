@@ -100,9 +100,9 @@ endif
 	ret, err := Parse(tmp)
 	require.NoError(t, err)
 
-	varNames := []string{}
-	for _, v := range ret.Variables {
-		varNames = append(varNames, v.Name)
+	varNames := make([]string, len(ret.Variables))
+	for i, v := range ret.Variables {
+		varNames[i] = v.Name
 	}
 
 	assert.Contains(t, varNames, "MKDIR", "MKDIR should be parsed as a variable, not a rule")
@@ -140,9 +140,9 @@ func TestParse_PatternAndPhonyRules(t *testing.T) {
 	ret, err := Parse(tmp)
 	require.NoError(t, err)
 
-	targets := []string{}
-	for _, r := range ret.Rules {
-		targets = append(targets, r.Target)
+	targets := make([]string, len(ret.Rules))
+	for i, r := range ret.Rules {
+		targets[i] = r.Target
 	}
 
 	assert.Contains(t, targets, "%.o")
@@ -163,9 +163,9 @@ target-with-hyphens  :
 	ret, err := Parse(tmp)
 	require.NoError(t, err)
 
-	targets := []string{}
-	for _, r := range ret.Rules {
-		targets = append(targets, r.Target)
+	targets := make([]string, len(ret.Rules))
+	for i, r := range ret.Rules {
+		targets[i] = r.Target
 	}
 
 	assert.Contains(t, targets, "target_with_underscores")
@@ -245,9 +245,9 @@ ${DIR_VAR}/subdir:
 	ret, err := Parse(tmp)
 	require.NoError(t, err)
 
-	targets := []string{}
-	for _, r := range ret.Rules {
-		targets = append(targets, r.Target)
+	targets := make([]string, len(ret.Rules))
+	for i, r := range ret.Rules {
+		targets[i] = r.Target
 	}
 
 	assert.Contains(t, targets, "file.ext")
@@ -325,10 +325,11 @@ SHELL != echo hi
 
 	assert.Empty(t, ret.Rules, "variable assignments with ':=' or similar should not create rules")
 
-	varNames := []string{}
-	for _, v := range ret.Variables {
-		varNames = append(varNames, v.Name)
+	varNames := make([]string, len(ret.Variables))
+	for i, v := range ret.Variables {
+		varNames[i] = v.Name
 	}
+
 	assert.Contains(t, varNames, "EXTENSION")
 	assert.Contains(t, varNames, "VAR")
 	assert.Contains(t, varNames, "APPEND")
