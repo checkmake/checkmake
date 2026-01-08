@@ -171,10 +171,15 @@ func runCheckmake(makefiles []string) error {
 }
 
 func listRules(w io.Writer, cfg *config.Config) {
-	data := [][]string{}
-	for _, rule := range rules.GetRulesSorted() {
+	rulesSorted := rules.GetRulesSorted()
+	data := make([][]string, len(rulesSorted))
+
+	for i, rule := range rulesSorted {
 		cfgForRule := cfg.GetRuleConfig(rule.Name())
-		data = append(data, []string{rule.Name(), rule.Description(cfgForRule)})
+		data[i] = []string{
+			rule.Name(),
+			rule.Description(cfgForRule),
+		}
 	}
 
 	table := tablewriter.NewTable(w,
