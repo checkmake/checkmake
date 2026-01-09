@@ -54,8 +54,9 @@ func newRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&output, "output", "o", "text", "Output format: 'text' (default) or 'json' (mutually exclusive with --format)")
 	cmd.MarkFlagsMutuallyExclusive("format", "output")
 
-	cmd.Version = fmt.Sprintf("%s %s built at %s by %s with %s",
-		"checkmake", version, buildTime, builder, goversion)
+	cmd.Version = fmt.Sprintf("%s built at %s by %s with %s",
+		version, buildTime, builder, goversion)
+	cmd.SetVersionTemplate("{{.Name}} {{.Version}}\n")
 
 	cmd.AddCommand(&cobra.Command{
 		Use:   "list-rules",
