@@ -48,6 +48,17 @@ func TestCheckmake_NoArgsShowsHelp(t *testing.T) {
 	assert.Contains(t, out, "checkmake [flags]", "should display root usage line")
 }
 
+func TestCheckmake_VersionOutput(t *testing.T) {
+	out := captureOutput(func() {
+		cmd := newRootCmd()
+		cmd.SetArgs([]string{"--version"})
+		err := cmd.Execute()
+		require.NoError(t, err, "command with --version should not fail")
+	})
+
+	assert.Regexp(t, `^checkmake (v\d.*)? built`, out)
+}
+
 func TestCheckmake_RunWithSimpleMakefile(t *testing.T) {
 	t.Parallel()
 	cmd := newRootCmd()
