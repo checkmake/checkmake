@@ -100,6 +100,74 @@ make will auto-detect the tool with a preference to podman.
 
 ## Creating A Patch Release
 
+These instruction explain the patch release proces at the example of v0.3.2.
+
+## 1. Backport Bugfixes
+
+First, all required bugfixes need to be backported from main to the release branch release-0.3.
+
+This is typicaly done with a `git cherry-pick`on the release branch, e. e.:
+
+```console
+$ git checkout release-0.3
+$ git fetch origin
+$ git reset --hard origin/release-0.3
+$ git cherry-pick -x COMMIT_SHA_FROM_MAIN
+```
+
+When backporting a pull request with multiplew commits, the cherry-pick needs to be done for every commit from that PR.
+
+Create a branch from the new HEAD of the local release-0.3 branch und use this to open a PR against the release-0.3 brancxh on github.
+
+
+## 2. Release Notes
+
+The nexct step is to prepare release notes.
+
+These are created in main (e. g. PR #236) and then backported to release-0.3 (e. g. PR #238)
+
+## 3. Tag the release and push
+
+Make sure the local release branch is up to date with the release notes and tag the release notes commit:
+
+```console
+$ git checkout release-0.3
+$ git fetch origin
+$ git reset --hard origin/release-0.3
+$ git tag -a  v0.3.2 -m "release v0.3.2"
+$ git push origin --tags
+```
+
+## 4. Create  the github release 
+
+```console
+$ make github-release
+```
+
+Note that this requires the github gh cli tool to be installed locally and logged in (`gh auth login`).
+
+$$ 5. build and push container images
+
+```console
+$ podman login quay.io
+$ make IMAGE_VERSION_TAG=v0.3.2 image-build
+$ make IMAGE_VERSION_TAG=v0.3.2 image-push
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
