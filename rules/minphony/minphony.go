@@ -20,7 +20,7 @@ func init() {
 	rules.RegisterRule(&MinPhony{required: defaultRequired})
 }
 
-//MinPhony is an empty struct on which to call the rule functions
+// MinPhony is an empty struct on which to call the rule functions
 type MinPhony struct {
 	required []string
 }
