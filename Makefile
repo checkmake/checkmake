@@ -121,6 +121,19 @@ $(GOLANGCI_LINT_BIN):
 lint: vet golangci-lint
 
 
+.PHOHY: check.go.fmt
+check.go.fmt:
+	@echo "Checking go formatting..."
+	@if [ -n "$$(gofmt -l .)" ]; then \
+			echo "Files need formatting:"; \
+				gofmt -l .; \
+				exit 1; \
+	else \
+		echo "All files formatted correctly."; \
+	fi
+
+.PHONY: check
+check: check.go.fmt lint
 
 
 coverage:
