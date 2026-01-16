@@ -133,11 +133,15 @@ check.go.fmt:
 	fi
 
 .PHONY: check
-check: check.go.fmt lint
+check: check.go.fmt check.self lint
 
 .PHONY: fix.go.fmt
 fix.go.fmt: # fix go formatting (if needed)
 	@go fmt ./...
+
+.PHONY: check.self
+check.self: clean binaries # check this Makefile
+	@./checkmake ./Makefile
 
 
 coverage:
