@@ -50,7 +50,7 @@ jobs:
       run: make clean all test
       shell: bash
 
-    - name: Run checkmake on Makefile
-      run: ./checkmake Makefile
+    - name: Selfcheck (Run checkmake on Makefile)
+      run: make check.self
       shell: bash
 
