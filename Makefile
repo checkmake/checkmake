@@ -106,8 +106,8 @@ require:
 test: lint
 	go test -v $(TEST_PKG)
 
-.PHONY: vet
-vet:
+.PHONY: go.vet
+go.vet:
 	@go vet ./...
 
 .PHONY: golangci-lint
@@ -118,7 +118,7 @@ $(GOLANGCI_LINT_BIN):
 	@go install github.com/golangci/golangci-lint/$(GOLANGCI_LINT_MAJOR_VER)/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 .PHONY: lint
-lint: vet golangci-lint
+lint: go.vet golangci-lint
 
 
 .PHOHY: check.go.fmt
