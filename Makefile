@@ -135,6 +135,10 @@ check.go.fmt:
 .PHONY: check
 check: check.go.fmt lint
 
+.PHONY: fix.go.fmt
+fix.go.fmt: # fix go formatting (if needed)
+	@go fmt ./...
+
 
 coverage:
 	@echo "mode: set" > cover.out
