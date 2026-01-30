@@ -6,6 +6,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/checkmake/checkmake)](https://goreportcard.com/report/github.com/checkmake/checkmake)
 [![Packagecloud](https://img.shields.io/badge/packagecloud-available-brightgreen.svg)](https://packagecloud.io/mrtazz/checkmake)
 [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](http://opensource.org/licenses/MIT)
+[![Go Reference](https://pkg.go.dev/badge/github.com/checkmake/checkmake/cmd/checkmake.svg)](https://pkg.go.dev/github.com/checkmake/checkmake/cmd/checkmake)
 
 ## Overview
 **checkmake** is a linter for Makefiles. It scans Makefiles for potential issues based on configurable rules.
