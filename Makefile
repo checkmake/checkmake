@@ -230,7 +230,7 @@ github-release: release-artifacts
 
 
 # clean up tasks
-clean: clean-docs clean-deps
+clean: clean-docs
 	$(RM) -r ./usr
 	$(RM) $(TARGETS)
 
@@ -245,7 +245,7 @@ pizza: # ignore checkmake
 	@echo ""
 	@echo ""
 
-.PHONY: all rpm deb install local-install packages coverage clean-deps clean clean-docs pizza binaries
+.PHONY: all rpm deb install local-install packages coverage clean clean-docs pizza binaries
 
 .PHONY: image-build
 image-build:
