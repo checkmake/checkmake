@@ -92,7 +92,8 @@ INSTALLED_MAN_TARGETS = $(addprefix $(PREFIX)/share/man/man1/, $(MAN_TARGETS))
 %.1: man/man1/%.1.md
 	sed "s/REPLACE_DATE/$(BUILDDATE)/" $< | pandoc -s -t man -o $@
 
-all: lint require $(TARGETS) $(MAN_TARGETS)
+all: check.go.lint require $(TARGETS) $(MAN_TARGETS)
+
 .DEFAULT_GOAL:=all
 
 binaries: $(TARGETS)
@@ -103,25 +104,29 @@ require:
 
 # development tasks
 
-test: lint
+.PHONY: test
+test: check
 	go test -v $(TEST_PKG)
 
-.PHONY: go.vet
-go.vet:
+.PHONY: check.go.vet
+check.go.vet:
+	@echo "vetting go code..."
 	@go vet ./...
 
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT_BIN)
+	@echo "linting go code..."
 	@$(GOLANGCI_LINT_BIN) run
+
 
 $(GOLANGCI_LINT_BIN):
 	@go install github.com/golangci/golangci-lint/$(GOLANGCI_LINT_MAJOR_VER)/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
-.PHONY: lint
-lint: go.vet golangci-lint
+.PHONY: check.go.lint
+check.go.lint: check.go.vet golangci-lint
 
 
-.PHOHY: check.go.fmt
+.PHONY: check.go.fmt
 check.go.fmt:
 	@echo "Checking go formatting..."
 	@if [ -n "$$(gofmt -l .)" ]; then \
@@ -132,8 +137,8 @@ check.go.fmt:
 		echo "All files formatted correctly."; \
 	fi
 
-.PHONY: check
-check: check.go.fmt check.self lint
+.PHONY: check # perform various checks
+check: check.go.fmt check.go.lint check.self
 
 .PHONY: fix.go.fmt
 fix.go.fmt: # fix go formatting (if needed)
@@ -240,7 +245,7 @@ pizza: # ignore checkmake
 	@echo ""
 	@echo ""
 
-.PHONY: all test rpm deb install local-install packages coverage clean-deps clean clean-docs pizza binaries
+.PHONY: all rpm deb install local-install packages coverage clean-deps clean clean-docs pizza binaries
 
 .PHONY: image-build
 image-build:
