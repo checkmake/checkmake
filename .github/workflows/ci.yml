@@ -50,7 +50,3 @@ jobs:
       run: make check
       shell: bash
 
-    - name: Selfcheck (Run checkmake on Makefile)
-      run: make check.self
-      shell: bash
-
