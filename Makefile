@@ -18,7 +18,7 @@ BUILD_GOOS ?= $(shell go env GOOS)
 BUILD_GOARCH ?= $(shell go env GOARCH)
 BUILD_GOPATH :=$(shell go env GOPATH)
 
-GOLANGCI_LINT_VERSION := latest
+GOLANGCI_LINT_VERSION := v2.6.1 #latest
 GOLANGCI_LINT_MAJOR_VER := v2
 GOLANGCI_LINT_BIN := $(BUILD_GOPATH)/bin/golangci-lint
 
