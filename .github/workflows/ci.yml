@@ -33,21 +33,21 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: |
         choco install -y make sed
-        choco install -y pandoc
+        choco install -y pandoc shellcheck
 
     - name: Install dependencies (macOS)
       if: matrix.os == 'macos-latest'
       run: |
-        brew install pandoc
+        brew install pandoc shellcheck
         
     - name: Install dependencies (Linux/Ubuntu)
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt update
-        sudo apt install -y pandoc
+        sudo apt install -y pandoc shellcheck
 
-    - name: Build and run unit tests
-      run: make clean all test
+    - name: lint, build and run unit tests
+      run: make check
       shell: bash
 
     - name: Selfcheck (Run checkmake on Makefile)
