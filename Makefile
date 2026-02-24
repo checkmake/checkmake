@@ -20,7 +20,7 @@ BUILD_GOPATH :=$(shell go env GOPATH)
 
 GOLANGCI_LINT_VERSION := latest
 GOLANGCI_LINT_MAJOR_VER := v2
-GOLANGCI_LINT_BIN:= $(BUILD_GOPATH)/bin/golangci-lint
+GOLANGCI_LINT_BIN := $(BUILD_GOPATH)/bin/golangci-lint
 
 
 
@@ -105,7 +105,7 @@ require:
 # development tasks
 
 .PHONY: test
-test: check
+test:
 	go test -v $(TEST_PKG)
 
 .PHONY: check.go.vet
@@ -117,6 +117,13 @@ check.go.vet:
 golangci-lint: $(GOLANGCI_LINT_BIN)
 	@echo "linting go code..."
 	@$(GOLANGCI_LINT_BIN) run
+
+
+.PHONY: check.sh.lint
+check.sh.lint: ## lint shell scripts ( requires shellcheck in the PATH.)
+	@echo "linting shell scripts..."
+	@shellcheck $(shell find . -name '*.sh')
+	@echo "All shell scripts are OK."
 
 
 $(GOLANGCI_LINT_BIN):
@@ -138,7 +145,11 @@ check.go.fmt:
 	fi
 
 .PHONY: check # perform various checks
-check: check.go.fmt check.go.lint check.self
+check: lint test check.self
+
+
+.PHONY: lint # perform linting (syntax and formatting) checks
+lint: check.go.fmt check.go.lint check.sh.lint
 
 .PHONY: fix.go.fmt
 fix.go.fmt: # fix go formatting (if needed)
