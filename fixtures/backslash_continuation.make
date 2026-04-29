@@ -1,4 +1,4 @@
-# Fixture for issue #244 – backslash line-continuation in recipe bodies.
+# Fixture for issue #257 - backslash line-continuation in recipe bodies.
 #
 # When a recipe line ends with '\' and the continuation lines use space
 # indentation (rather than a leading tab), the parser fails to recognise them

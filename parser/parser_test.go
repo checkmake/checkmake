@@ -310,8 +310,8 @@ APPEND_VAR += more stuff
 }
 
 // ---------------------------------------------------------------------------
-// Issue #244 – backslash line-continuation in recipe bodies
-// (reported at https://github.com/checkmake/checkmake/issues/244#issuecomment-4344766044)
+// Issue #257 - backslash line-continuation in recipe bodies
+// (reported at https://github.com/checkmake/checkmake/issues/257)
 // ---------------------------------------------------------------------------
 //
 // Root cause: when a recipe command is written across multiple lines using a
@@ -329,7 +329,7 @@ APPEND_VAR += more stuff
 //   Target "--scheduler django_celery_beat.schedulers" should be declared PHONY.
 
 // TestParse_BackslashContinuation_SpaceIndented is the primary regression test
-// for issue #244.  It uses the exact pattern from the bug report: the first
+// for issue #257.  It uses the exact pattern from the bug report: the first
 // recipe line starts with a TAB and ends with '\'; the continuation lines use
 // SPACE indentation (as is common when aligning flags under a command).
 //
