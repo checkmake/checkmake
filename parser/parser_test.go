@@ -309,6 +309,164 @@ APPEND_VAR += more stuff
 	assert.False(t, appendVar.SimplyExpanded, "+= should default to recursive (false)")
 }
 
+// ---------------------------------------------------------------------------
+// Issue #257 - backslash line-continuation in recipe bodies
+// (reported at https://github.com/checkmake/checkmake/issues/257)
+// ---------------------------------------------------------------------------
+//
+// Root cause: when a recipe command is written across multiple lines using a
+// trailing '\', the continuation lines are commonly indented with SPACES (not
+// a tab) for visual alignment.  The body-collection loop in the parser uses
+// the regex `^\t+(.*)` which requires a leading tab, so space-indented
+// continuation lines are silently dropped from the rule body.
+//
+// When such a continuation line also contains a colon (e.g. a --scheduler
+// flag whose value contains a Python module path like
+// "django_celery_beat.schedulers:DatabaseScheduler"), the parser's
+// reFindRule regex matches it and registers it as a brand-new rule target.
+// The phonydeclared rule then fires a spurious violation:
+//
+//   Target "--scheduler django_celery_beat.schedulers" should be declared PHONY.
+
+// TestParse_BackslashContinuation_SpaceIndented is the primary regression test
+// for issue #257.  It uses the exact pattern from the bug report: the first
+// recipe line starts with a TAB and ends with '\'; the continuation lines use
+// SPACE indentation (as is common when aligning flags under a command).
+//
+// Expected (correct) behaviour after the fix:
+//   – ret.Rules contains exactly ONE rule ("celerybeat")
+//   – the continuation fragments are NOT parsed as extra rules
+//
+// Current (buggy) behaviour that this test exposes:
+//   – "--scheduler django_celery_beat.schedulers" is parsed as a second rule
+//     because the space-indented line `        --scheduler ...:Database...`
+//     is not consumed as a body line and its colon tricks reFindRule.
+func TestParse_BackslashContinuation_SpaceIndented(t *testing.T) {
+	t.Parallel()
+
+	// Reproduce the exact snippet from the bug comment.
+	// Note: the first recipe line starts with \t; continuations use spaces.
+	makefile := ".PHONY: celerybeat\n" +
+		"celerybeat: reset_redis\n" +
+		"\tpipenv run celery -A myproject beat \\\n" +
+		"        --scheduler django_celery_beat.schedulers:DatabaseScheduler \\\n" +
+		"        --loglevel=INFO\n"
+
+	tmp := writeTempMakefile(t, makefile)
+	defer os.Remove(tmp)
+
+	ret, err := Parse(tmp)
+	require.NoError(t, err)
+
+	// Collect all parsed rule targets for a readable failure message.
+	targets := make([]string, len(ret.Rules))
+	for i, r := range ret.Rules {
+		targets[i] = r.Target
+	}
+
+	// BUG: the parser currently creates a spurious rule whose target is
+	// "--scheduler django_celery_beat.schedulers".  After the fix there should
+	// be exactly two rules: ".PHONY" and "celerybeat".
+	assert.NotContains(t, targets, "--scheduler django_celery_beat.schedulers",
+		"space-indented continuation line must not be parsed as a rule target")
+
+	assert.Len(t, ret.Rules, 2,
+		"only '.PHONY' and 'celerybeat' should be parsed as rules; got: %v", targets)
+}
+
+// TestParse_BackslashContinuation_BodyNotTruncated checks the companion
+// symptom: the celerybeat rule's body must contain all three recipe lines
+// (the initial command plus its two continuation lines), not just the first.
+//
+// BUG: currently the body stops at the first line because the space-indented
+// continuations are not recognised as body lines.
+func TestParse_BackslashContinuation_BodyNotTruncated(t *testing.T) {
+	t.Parallel()
+
+	makefile := ".PHONY: celerybeat\n" +
+		"celerybeat: reset_redis\n" +
+		"\tpipenv run celery -A myproject beat \\\n" +
+		"        --scheduler django_celery_beat.schedulers:DatabaseScheduler \\\n" +
+		"        --loglevel=INFO\n"
+
+	tmp := writeTempMakefile(t, makefile)
+	defer os.Remove(tmp)
+
+	ret, err := Parse(tmp)
+	require.NoError(t, err)
+
+	// Find the celerybeat rule.
+	var celeryRule *Rule
+	for i := range ret.Rules {
+		if ret.Rules[i].Target == "celerybeat" {
+			celeryRule = &ret.Rules[i]
+			break
+		}
+	}
+	require.NotNil(t, celeryRule, "celerybeat rule must be present")
+
+	// The body should contain all three physical recipe lines.
+	// BUG: currently only the first (tab-indented) line is captured.
+	assert.Len(t, celeryRule.Body, 3,
+		"all three recipe lines (initial + 2 space-indented continuations) must be in the body")
+}
+
+// TestParse_BackslashContinuation_TabIndentedBaseline confirms that the
+// existing behaviour for fully tab-indented continuations is unaffected.
+// This test is expected to PASS both before and after the fix.
+func TestParse_BackslashContinuation_TabIndentedBaseline(t *testing.T) {
+	t.Parallel()
+
+	// All continuation lines start with a tab – the parser already handles this.
+	makefile := ".PHONY: build\n" +
+		"build:\n" +
+		"\techo alpha\n" +
+		"\techo beta\n" +
+		"\techo gamma\n"
+
+	tmp := writeTempMakefile(t, makefile)
+	defer os.Remove(tmp)
+
+	ret, err := Parse(tmp)
+	require.NoError(t, err)
+
+	var buildRule *Rule
+	for i := range ret.Rules {
+		if ret.Rules[i].Target == "build" {
+			buildRule = &ret.Rules[i]
+			break
+		}
+	}
+	require.NotNil(t, buildRule, "build rule must be present")
+	assert.Len(t, buildRule.Body, 3,
+		"three independent tab-indented lines should produce Body length 3")
+}
+
+// TestParse_BackslashContinuation_FixtureFile exercises the exact fixture file
+// that mirrors the bug-report snippet (fixtures/backslash_continuation.make).
+func TestParse_BackslashContinuation_FixtureFile(t *testing.T) {
+	t.Parallel()
+
+	ret, err := Parse("../fixtures/backslash_continuation.make")
+	require.NoError(t, err)
+
+	targets := make([]string, len(ret.Rules))
+	for i, r := range ret.Rules {
+		targets[i] = r.Target
+	}
+
+	// BUG: the space-indented continuation line
+	//   "        --scheduler django_celery_beat.schedulers:DatabaseScheduler \\"
+	// is being misidentified as a rule target.
+	assert.NotContains(t, targets,
+		"--scheduler django_celery_beat.schedulers",
+		"continuation line fragment must not appear as a rule target")
+
+	// After the fix only .PHONY and celerybeat should be present.
+	assert.Len(t, ret.Rules, 2,
+		"only '.PHONY' and 'celerybeat' should be parsed; got: %v", targets)
+}
+
 func TestParse_VariableLikeRuleIsNotRule(t *testing.T) {
 	t.Parallel()
 	makefile := `
