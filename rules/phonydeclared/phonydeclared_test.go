@@ -31,7 +31,7 @@ func TestAllTargetsArePhony(t *testing.T) {
 }
 
 // TestPhonyDeclared_BackslashContinuation is the rule-level regression test
-// for issue #244 (comment https://github.com/checkmake/checkmake/issues/244#issuecomment-4344766044).
+// for issue #257 (https://github.com/checkmake/checkmake/issues/257).
 //
 // The parser currently misidentifies the space-indented continuation line
 //
@@ -85,10 +85,10 @@ func TestPhonyDeclared_BackslashContinuation(t *testing.T) {
 
 	// After the fix the parser will not produce the spurious rule, so
 	// phonydeclared will have nothing to complain about.
-	// FAILING until issue #244 is fixed in the parser.
+	// FAILING until issue #257 is fixed in the parser.
 	for _, v := range ret {
 		if v.Violation == `Target "--scheduler django_celery_beat.schedulers" should be declared PHONY.` {
-			t.Errorf("BUG #244: spurious phonydeclared violation for continuation line fragment: %s", v.Violation)
+			t.Errorf("BUG #257: spurious phonydeclared violation for continuation line fragment: %s", v.Violation)
 		}
 	}
 
