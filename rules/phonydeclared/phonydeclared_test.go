@@ -1,11 +1,13 @@
 package phonydeclared
 
 import (
+	"os"
 	"testing"
 
 	"github.com/checkmake/checkmake/parser"
 	"github.com/checkmake/checkmake/rules"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAllTargetsArePhony(t *testing.T) {
@@ -30,70 +32,36 @@ func TestAllTargetsArePhony(t *testing.T) {
 	assert.Equal(t, len(ret), 0)
 }
 
-// TestPhonyDeclared_BackslashContinuation is the rule-level regression test
+// TestPhonyDeclared_BackslashContinuation is the end-to-end regression test
 // for issue #257 (https://github.com/checkmake/checkmake/issues/257).
 //
-// The parser currently misidentifies the space-indented continuation line
-//
-//   "        --scheduler django_celery_beat.schedulers:DatabaseScheduler \\"
-//
-// as a rule target because it is not consumed by the tab-only body-collection
-// loop and its colon matches reFindRule.  phonydeclared then fires:
-//
-//   Target "--scheduler django_celery_beat.schedulers" should be declared PHONY.
-//
-// This test builds the Makefile struct that the parser *currently* produces
-// (the buggy state) and asserts that phonydeclared must NOT raise a violation
-// for the spurious target.  The test will FAIL until the parser is fixed.
+// Space-indented backslash continuation lines in a recipe body must not be
+// misidentified as rule targets by the parser, and phonydeclared must not
+// fire a spurious violation for them.
 func TestPhonyDeclared_BackslashContinuation(t *testing.T) {
 	t.Parallel()
 
-	// This is the struct the parser currently produces for:
-	//
-	//   .PHONY: celerybeat
-	//   celerybeat: reset_redis
-	//   \tpipenv run celery -A myproject beat \
-	//           --scheduler django_celery_beat.schedulers:DatabaseScheduler \
-	//           --loglevel=INFO
-	//
-	// BUG: the spurious rule whose target is
-	// "--scheduler django_celery_beat.schedulers" should not exist.
-	makefile := parser.Makefile{
-		FileName: "celery.mk",
-		Rules: []parser.Rule{
-			{
-				Target:       ".PHONY",
-				Dependencies: []string{"celerybeat"},
-			},
-			{
-				Target:       "celerybeat",
-				Dependencies: []string{"reset_redis"},
-				// BUG: currently only the first tab-indented line ends up here.
-				Body: []string{`pipenv run celery -A myproject beat \`},
-			},
-			// BUG: these two rules should not exist – they are continuation
-			// lines that were misidentified as targets by the parser.
-			{
-				Target: "--scheduler django_celery_beat.schedulers",
-				Body:   []string{},
-			},
-		},
-	}
+	content := ".PHONY: celerybeat\n" +
+		"celerybeat: reset_redis\n" +
+		"\tpipenv run celery -A myproject beat \\\n" +
+		"        --scheduler django_celery_beat.schedulers:DatabaseScheduler \\\n" +
+		"        --loglevel=INFO\n"
+
+	f, err := os.CreateTemp("", "*.mk")
+	require.NoError(t, err)
+	_, err = f.WriteString(content)
+	require.NoError(t, err)
+	require.NoError(t, f.Close())
+	defer os.Remove(f.Name())
+
+	makefile, err := parser.Parse(f.Name())
+	require.NoError(t, err)
 
 	rule := Phonydeclared{}
 	ret := rule.Run(makefile, rules.RuleConfig{})
 
-	// After the fix the parser will not produce the spurious rule, so
-	// phonydeclared will have nothing to complain about.
-	// FAILING until issue #257 is fixed in the parser.
-	for _, v := range ret {
-		if v.Violation == `Target "--scheduler django_celery_beat.schedulers" should be declared PHONY.` {
-			t.Errorf("BUG #257: spurious phonydeclared violation for continuation line fragment: %s", v.Violation)
-		}
-	}
-
 	assert.Empty(t, ret,
-		"no phonydeclared violations expected: the continuation line is not a real target")
+		"no phonydeclared violations expected: continuation lines are not rule targets")
 }
 
 func TestMissingOnePhonyTarget(t *testing.T) {
