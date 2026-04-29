@@ -69,7 +69,7 @@ func TestFooIsTooLongWithConfig(t *testing.T) {
 }
 
 // TestMaxBodyLength_BackslashContinuation documents the secondary maxbodylength
-// symptom of issue #244.
+// symptom of issue #257.
 //
 // Once the parser is fixed and correctly collects all three recipe lines
 // (the tab-indented start line + two space-indented continuation lines) into
@@ -85,7 +85,7 @@ func TestMaxBodyLength_BackslashContinuation(t *testing.T) {
 			Target: "celerybeat",
 			// Three body lines: the initial tab-indented command plus the two
 			// space-indented continuation lines — as the parser should return
-			// after the issue #244 fix.
+			// after the issue #257 fix.
 			Body: []string{
 				`pipenv run celery -A myproject beat \`,
 				`--scheduler django_celery_beat.schedulers:DatabaseScheduler \`,
