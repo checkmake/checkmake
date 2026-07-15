@@ -228,8 +228,17 @@ func parseRuleOrVariable(scanner *MakefileScanner) (ret interface{}, err error) 
 
 		// collect tab-indented body lines after the rule
 		for bodyMatches := reFindRuleBody.FindStringSubmatch(scanner.Text()); bodyMatches != nil; bodyMatches = reFindRuleBody.FindStringSubmatch(scanner.Text()) {
-			ruleBody = append(ruleBody, strings.TrimSpace(bodyMatches[1]))
+			line := strings.TrimSpace(bodyMatches[1])
+			ruleBody = append(ruleBody, line)
 			scanner.Scan()
+			// If the line ended with a backslash, consume continuation lines
+			// regardless of their indentation. Space-indented continuations
+			// are common when aligning flags under a long command.
+			for strings.HasSuffix(line, `\`) {
+				line = strings.TrimSpace(scanner.Text())
+				ruleBody = append(ruleBody, line)
+				scanner.Scan()
+			}
 		}
 
 		ret = Rule{
