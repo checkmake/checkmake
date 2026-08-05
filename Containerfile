@@ -9,7 +9,7 @@ WORKDIR /go/src/github.com/checkmake/checkmake
 RUN make BUILDER_NAME="${BUILDER_NAME}" BUILDER_EMAIL="${BUILDER_EMAIL}" clean binaries
 RUN make test
 
-FROM alpine:3.23
+FROM alpine:3.24
 RUN apk add --no-cache make
 USER nobody
 
