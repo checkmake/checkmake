@@ -8,5 +8,5 @@ repos:
     - id: checkmake
       exclude: |
         (?x)^(
-          fixtures/missing_phony\.make
+          fixtures/(missing_phony|multiline_phony)\.make
         )$

@@ -8,6 +8,7 @@ import (
 	"github.com/checkmake/checkmake/parser"
 	"github.com/checkmake/checkmake/rules"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var mpRunTests = []struct {
@@ -148,4 +149,15 @@ func TestMinPhony_MissingPhonyDeclaration(t *testing.T) {
 	assert.Len(t, ret, 2, "expected two missing PHONY declaration violations")
 	assert.Equal(t, "Required target \"clean\" must be declared PHONY.", ret[0].Violation)
 	assert.Equal(t, "Required target \"test\" must be declared PHONY.", ret[1].Violation)
+}
+
+func TestMinPhony_MultilinePhonyDeclaration(t *testing.T) {
+	t.Parallel()
+	makefile, err := parser.Parse("../../fixtures/multiline_phony.make")
+	require.NoError(t, err)
+
+	mp := &MinPhony{required: []string{"all", "clean", "test"}}
+	ret := mp.Run(makefile, rules.RuleConfig{})
+
+	assert.Empty(t, ret, "targets declared PHONY via a backslash-continued .PHONY line must not be flagged")
 }
