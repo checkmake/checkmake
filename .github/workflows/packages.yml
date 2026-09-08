@@ -80,12 +80,12 @@ jobs:
     steps:
     - uses: actions/checkout@v7
     - name: Build the Docker image
-      run: docker build --build-arg BUILDER_NAME=CI --build-arg BUILDER_EMAIL=ci@test.only . --file Dockerfile --tag mrtazz/checkmake:${GITHUB_SHA} --tag mrtazz/checkmake:latest
+      run: docker build --build-arg BUILDER_NAME=CI --build-arg BUILDER_EMAIL=ci@test.only . --file Dockerfile --tag mrtazz/checkmake:"${GITHUB_SHA}" --tag mrtazz/checkmake:latest
 
     - name: push the docker image to docker hub
       if: github.ref == 'refs/heads/main'
       run: |
-        echo ${{ secrets.DOCKER_HUB_TOKEN }} | docker login -u mrtazz --password-stdin
-        docker push mrtazz/checkmake:${GITHUB_SHA}
+        echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login -u mrtazz --password-stdin
+        docker push mrtazz/checkmake:"${GITHUB_SHA}"
         docker push mrtazz/checkmake:latest
         docker logout hub.docker.com
