@@ -1,6 +1,6 @@
 module github.com/checkmake/checkmake
 
-go 1.25
+go 1.27
 
 require (
 	github.com/go-ini/ini v1.67.0
