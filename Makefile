@@ -92,7 +92,7 @@ INSTALLED_MAN_TARGETS = $(addprefix $(PREFIX)/share/man/man1/, $(MAN_TARGETS))
 %.1: man/man1/%.1.md
 	sed "s/REPLACE_DATE/$(BUILDDATE)/" $< | pandoc -s -t man -o $@
 
-all: check.go.lint require $(TARGETS) $(MAN_TARGETS)
+all: lint.go require $(TARGETS) $(MAN_TARGETS)
 
 .DEFAULT_GOAL:=all
 
@@ -108,8 +108,8 @@ require:
 test:
 	go test -v $(TEST_PKG)
 
-.PHONY: check.go.vet
-check.go.vet:
+.PHONY: vet.go
+vet.go:
 	@echo "vetting go code..."
 	@go vet ./...
 
@@ -119,8 +119,8 @@ golangci-lint: $(GOLANGCI_LINT_BIN)
 	@$(GOLANGCI_LINT_BIN) run
 
 
-.PHONY: check.sh.lint
-check.sh.lint: ## lint shell scripts ( requires shellcheck in the PATH.)
+.PHONY: lint.shell
+lint.shell: ## lint shell scripts ( requires shellcheck in the PATH.)
 	@echo "linting shell scripts..."
 	@shellcheck $(shell find . -name '*.sh')
 	@echo "All shell scripts are OK."
@@ -129,8 +129,8 @@ check.sh.lint: ## lint shell scripts ( requires shellcheck in the PATH.)
 $(GOLANGCI_LINT_BIN):
 	@go install github.com/golangci/golangci-lint/$(GOLANGCI_LINT_MAJOR_VER)/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
-.PHONY: check.go.lint
-check.go.lint: check.go.vet golangci-lint
+.PHONY: lint.go
+lint.go: vet.go golangci-lint
 
 
 .PHONY: check.go.fmt
@@ -149,7 +149,7 @@ check: lint test check.self
 
 
 .PHONY: lint # perform linting (syntax and formatting) checks
-lint: check.go.fmt check.go.lint check.sh.lint
+lint: check.go.fmt lint.go lint.shell
 
 .PHONY: fix.go.fmt
 fix.go.fmt: # fix go formatting (if needed)
