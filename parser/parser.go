@@ -82,6 +82,35 @@ var (
 	reFindSpecialTarget = regexp.MustCompile(`^(\.[A-Za-z_]+)\s*:(.*)`)
 )
 
+// hasLineContinuation reports whether s ends in an odd number of trailing
+// backslashes. In Make syntax a line ending in a single (unescaped)
+// backslash continues onto the next physical line.
+func hasLineContinuation(s string) bool {
+	n := 0
+	for i := len(s) - 1; i >= 0 && s[i] == '\\'; i-- {
+		n++
+	}
+	return n%2 == 1
+}
+
+// readContinuedLine returns the logical line starting at the scanner's
+// current position, joining any backslash-continued physical lines into a
+// single line per Make's line-continuation rules (the trailing backslash
+// and the continuation line's leading whitespace are collapsed into a
+// single space). The scanner is left positioned on the last physical line
+// consumed, matching the contract of scanner.Text() for a single line.
+func readContinuedLine(scanner *MakefileScanner) string {
+	line := scanner.Text()
+	for hasLineContinuation(line) {
+		line = strings.TrimRight(strings.TrimSuffix(line, "\\"), " \t")
+		if !scanner.Scan() {
+			break
+		}
+		line += " " + strings.TrimLeft(scanner.Text(), " \t")
+	}
+	return line
+}
+
 // Parse is the main function to parse a Makefile from a file path string to a
 // Makefile struct. This function should be kept fairly small and ideally most
 // of the heavy lifting will live in the specific parsing functions below that
@@ -100,14 +129,16 @@ func Parse(filepath string) (ret Makefile, err error) {
 			// parse comments here, ignoring them for now
 			scanner.Scan()
 		case strings.HasPrefix(scanner.Text(), "."):
-			if matches := reFindSpecialTarget.FindStringSubmatch(scanner.Text()); matches != nil {
+			startLineNumber := scanner.LineNumber
+			line := readContinuedLine(scanner)
+			if matches := reFindSpecialTarget.FindStringSubmatch(line); matches != nil {
 				// Treat special targets like .PHONY or .DEFAULT_GOAL as rules, not variables
 				specialRule := Rule{
 					Target:       strings.TrimSpace(matches[1]),
 					Dependencies: strings.Fields(strings.TrimSpace(matches[2])),
 					Body:         nil,
 					FileName:     filepath,
-					LineNumber:   scanner.LineNumber,
+					LineNumber:   startLineNumber,
 				}
 				ret.Rules = append(ret.Rules, specialRule)
 			}
@@ -145,7 +176,8 @@ func Parse(filepath string) (ret Makefile, err error) {
 //
 //nolint:unparam // parseRuleOrVariable never returns an error yet, placeholder for future error handling
 func parseRuleOrVariable(scanner *MakefileScanner) (ret interface{}, err error) {
-	line := scanner.Text()
+	startLineNumber := scanner.LineNumber
+	line := readContinuedLine(scanner)
 
 	if matches := reFindSimpleVariable.FindStringSubmatch(line); matches != nil {
 		ret = Variable{
@@ -153,7 +185,7 @@ func parseRuleOrVariable(scanner *MakefileScanner) (ret interface{}, err error) 
 			Assignment:     strings.TrimSpace(matches[2]),
 			SimplyExpanded: true,
 			FileName:       scanner.FileHandle.Name(),
-			LineNumber:     scanner.LineNumber,
+			LineNumber:     startLineNumber,
 		}
 		scanner.Scan()
 		return
@@ -165,7 +197,7 @@ func parseRuleOrVariable(scanner *MakefileScanner) (ret interface{}, err error) 
 			Assignment:     strings.TrimSpace(matches[2]),
 			SimplyExpanded: false,
 			FileName:       scanner.FileHandle.Name(),
-			LineNumber:     scanner.LineNumber,
+			LineNumber:     startLineNumber,
 		}
 		scanner.Scan()
 		return
@@ -194,14 +226,14 @@ func parseRuleOrVariable(scanner *MakefileScanner) (ret interface{}, err error) 
 			Assignment:     strings.TrimSpace(matches[3]), // Use index 3 for value
 			SimplyExpanded: isSimple,
 			FileName:       scanner.FileHandle.Name(),
-			LineNumber:     scanner.LineNumber,
+			LineNumber:     startLineNumber,
 		}
 		scanner.Scan()
 		return
 	}
 
 	if matches := reFindRule.FindStringSubmatch(line); matches != nil {
-		beginLineNumber := scanner.LineNumber - 1
+		beginLineNumber := startLineNumber - 1
 		scanner.Scan()
 
 		// Handle inline recipe syntax: target: deps ; recipe
