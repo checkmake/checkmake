@@ -22,6 +22,9 @@ GOLANGCI_LINT_VERSION := v2.13.0 # pinned
 GOLANGCI_LINT_MAJOR_VER := v2
 GOLANGCI_LINT_BIN := $(BUILD_GOPATH)/bin/golangci-lint
 
+ACTIONLINT_VERSION := v1.7.12 # pinned
+ACTIONLINT_BIN := $(BUILD_GOPATH)/bin/actionlint
+
 
 
 IMAGE_REGISTRY ?= quay.io
@@ -126,6 +129,15 @@ lint.shell: ## lint shell scripts ( requires shellcheck in the PATH.)
 	@echo "All shell scripts are OK."
 
 
+.PHONY: lint.workflows
+lint.workflows: $(ACTIONLINT_BIN) ## lint github workflow files
+	@echo "linting GitHub workflows..."
+	@$(ACTIONLINT_BIN) --color
+	@echo "all workflows are good"
+
+$(ACTIONLINT_BIN):
+	@go install github.com/rhysd/actionlint/cmd/actionlint@$(ACTIONLINT_VERSION)
+
 $(GOLANGCI_LINT_BIN):
 	@go install github.com/golangci/golangci-lint/$(GOLANGCI_LINT_MAJOR_VER)/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
@@ -149,7 +161,7 @@ check: lint test check.self
 
 
 .PHONY: lint # perform linting (syntax and formatting) checks
-lint: check.go.fmt lint.go lint.shell
+lint: check.go.fmt lint.go lint.shell lint.workflows
 
 .PHONY: fix.go.fmt
 fix.go.fmt: # fix go formatting (if needed)
@@ -265,6 +277,5 @@ image-build:
 .PHONY: image-push
 image-push:
 	$(CONTAINER_CMD) push $(IMG)
-
 
 
