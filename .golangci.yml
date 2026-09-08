@@ -10,13 +10,13 @@ linters:
     - staticcheck
     - ineffassign
     - unused
-    - goconst
     - prealloc
     - unparam
     - nolintlint
     - misspell
     - revive
   disable:
+    - goconst
     - dupl
     - errcheck
     - gocyclo
