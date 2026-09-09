@@ -169,7 +169,10 @@ fix.go.fmt: # fix go formatting (if needed)
 
 .PHONY: check.self
 check.self: clean binaries # check this Makefile
+	@echo "checking our own Makefile..."
 	@./checkmake ./Makefile
+	@echo "Makefile is good."
+
 
 
 coverage:
