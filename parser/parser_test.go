@@ -335,3 +335,48 @@ SHELL != echo hi
 	assert.Contains(t, varNames, "APPEND")
 	assert.Contains(t, varNames, "SHELL")
 }
+
+func TestParse_MultilinePhonyDeclaration(t *testing.T) {
+	t.Parallel()
+	ret, err := Parse("../fixtures/multiline_phony.make")
+	require.NoError(t, err)
+
+	var phony *Rule
+	for i := range ret.Rules {
+		if ret.Rules[i].Target == ".PHONY" {
+			phony = &ret.Rules[i]
+			break
+		}
+	}
+	require.NotNil(t, phony, "expected a .PHONY rule to be parsed")
+
+	assert.Equal(t, []string{"init", "sync", "all", "clean", "test"}, phony.Dependencies,
+		"backslash-continued .PHONY dependencies should all be collected, without a literal backslash token")
+}
+
+func TestParse_LineContinuationInRuleDependencies(t *testing.T) {
+	t.Parallel()
+	makefile := "all: dep1 dep2 \\\n     dep3\n\techo hi\n"
+	tmp := writeTempMakefile(t, makefile)
+	defer os.Remove(tmp)
+
+	ret, err := Parse(tmp)
+	require.NoError(t, err)
+
+	require.Len(t, ret.Rules, 1)
+	assert.Equal(t, "all", ret.Rules[0].Target)
+	assert.Equal(t, []string{"dep1", "dep2", "dep3"}, ret.Rules[0].Dependencies)
+}
+
+func TestParse_LineContinuationCollapsesSurroundingWhitespace(t *testing.T) {
+	t.Parallel()
+	makefile := "VALUE := left   \\\n  right\n"
+	tmp := writeTempMakefile(t, makefile)
+	defer os.Remove(tmp)
+
+	ret, err := Parse(tmp)
+	require.NoError(t, err)
+
+	require.Len(t, ret.Variables, 1)
+	assert.Equal(t, "left right", ret.Variables[0].Assignment)
+}
