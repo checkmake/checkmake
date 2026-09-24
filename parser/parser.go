@@ -76,6 +76,10 @@ var (
 	// Group 3: The value being assigned.
 	reFindOtherVariable = regexp.MustCompile(`^([A-Za-z0-9_.-]+)\s*([?!+]=)\s*(.*)`)
 
+	// reFindDefine matches the start of a multi-line variable definition block.
+	// Everything between "define" and "endef" should be skipped by the parser.
+	reFindDefine = regexp.MustCompile(`^\s*define\s+`)
+
 	// reFindSpecialTarget captures special Make targets that start with a dot, like .PHONY.
 	// Group 1: The special target name (e.g., ".PHONY").
 	// Group 2: The prerequisites/dependencies (e.g., "all clean test").
@@ -128,6 +132,18 @@ func Parse(filepath string) (ret Makefile, err error) {
 		case strings.HasPrefix(scanner.Text(), "#"):
 			// parse comments here, ignoring them for now
 			scanner.Scan()
+		case reFindDefine.MatchString(scanner.Text()):
+			// Skip multi-line variable blocks (define ... endef).
+			// Lines inside these blocks are not rules or variables.
+			// If endef is missing, the parser skips to EOF.
+			scanner.Scan()
+			for !scanner.Finished && strings.TrimSpace(scanner.Text()) != "endef" {
+				scanner.Scan()
+			}
+			// Skip the "endef" line itself
+			if !scanner.Finished {
+				scanner.Scan()
+			}
 		case strings.HasPrefix(scanner.Text(), "."):
 			startLineNumber := scanner.LineNumber
 			line := readContinuedLine(scanner)

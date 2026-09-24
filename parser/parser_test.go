@@ -309,6 +309,78 @@ APPEND_VAR += more stuff
 	assert.False(t, appendVar.SimplyExpanded, "+= should default to recursive (false)")
 }
 
+func TestParse_DefineBlockSkipped(t *testing.T) {
+	t.Parallel()
+	ret, err := Parse("../fixtures/define_block.make")
+
+	require.NoError(t, err)
+
+	// The define block should be skipped entirely; "some-test:" inside it
+	// must NOT be parsed as a rule.
+	targets := make([]string, len(ret.Rules))
+	for i, r := range ret.Rules {
+		targets[i] = r.Target
+	}
+
+	assert.NotContains(t, targets, "some-test",
+		"lines inside define/endef blocks should not be parsed as rules")
+
+	// The real targets should still be parsed correctly.
+	assert.Contains(t, targets, ".PHONY")
+	assert.Contains(t, targets, "test")
+	assert.Contains(t, targets, "all")
+	assert.Contains(t, targets, "clean")
+}
+
+func TestParse_MultipleDefineBlocks(t *testing.T) {
+	t.Parallel()
+	makefile := `
+define BLOCK_A
+fake-target-a:
+endef
+
+define BLOCK_B
+fake-target-b:
+endef
+
+.PHONY: all
+all:
+	@echo done
+`
+	tmp := writeTempMakefile(t, makefile)
+	defer os.Remove(tmp)
+
+	ret, err := Parse(tmp)
+	require.NoError(t, err)
+
+	targets := make([]string, len(ret.Rules))
+	for i, r := range ret.Rules {
+		targets[i] = r.Target
+	}
+
+	assert.NotContains(t, targets, "fake-target-a",
+		"lines inside first define block should not be parsed as rules")
+	assert.NotContains(t, targets, "fake-target-b",
+		"lines inside second define block should not be parsed as rules")
+	assert.Contains(t, targets, "all")
+}
+
+func TestParse_UnclosedDefineBlock(t *testing.T) {
+	t.Parallel()
+	makefile := `
+define UNCLOSED
+fake-target:
+`
+	tmp := writeTempMakefile(t, makefile)
+	defer os.Remove(tmp)
+
+	// Should not hang or panic; the parser skips to EOF.
+	ret, err := Parse(tmp)
+	require.NoError(t, err)
+
+	assert.Empty(t, ret.Rules, "unclosed define block should not produce rules")
+}
+
 func TestParse_VariableLikeRuleIsNotRule(t *testing.T) {
 	t.Parallel()
 	makefile := `
