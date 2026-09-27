@@ -73,8 +73,8 @@ configurable rules being run against a Makefile or a set of `\*.mk` files.
      This list is configurable (see below).
 
  **phonydeclared**
- :   Every target without a body needs
-     to be marked PHONY
+ :   Every target without a body, unless another rule
+     supplies its recipe, needs to be marked PHONY
 
  **timestampexpanded**
  :   timestamp variables should be
