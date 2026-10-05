@@ -33,3 +33,8 @@ type VariableList []Variable
 ```
 
 Providing the most basic building blocks to run validations on.
+
+Target-specific and pattern-specific variable assignments such as
+`target: NAME = value` (any assignment operator, with optional `export`,
+`unexport`, `override` or `private`) are skipped: they are neither rules nor
+global variables.
