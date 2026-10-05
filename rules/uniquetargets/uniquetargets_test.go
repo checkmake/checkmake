@@ -6,6 +6,7 @@ import (
 	"github.com/checkmake/checkmake/parser"
 	"github.com/checkmake/checkmake/rules"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUniqueTargets(t *testing.T) {
@@ -85,4 +86,15 @@ func TestPhonyTargetsAreIgnored(t *testing.T) {
 
 	assert.Equal(t, 1, len(ret), "only non-.PHONY duplicates should trigger violations")
 	assert.Contains(t, ret[0].Violation, `"build" defined multiple times`)
+}
+
+func TestUniqueTargets_TargetSpecificVariables(t *testing.T) {
+	t.Parallel()
+	makefile, err := parser.Parse("../../fixtures/target_specific_variables.make")
+	require.NoError(t, err)
+
+	rule := UniqueTargets{}
+	ret := rule.Run(makefile, rules.RuleConfig{})
+
+	assert.Equal(t, 0, len(ret), "target-specific variable assignments must not be reported as duplicate targets")
 }

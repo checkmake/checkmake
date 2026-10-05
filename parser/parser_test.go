@@ -255,8 +255,12 @@ ${DIR_VAR}/subdir:
 	assert.Contains(t, targets, "${DIR_VAR}/subdir")
 }
 
-func TestParse_RuleWithEqualsInPrereq(t *testing.T) {
+func TestParse_TargetSpecificEqualsWithFollowingRecipeIsNotRule(t *testing.T) {
 	t.Parallel()
+	// GNU make reads "target: prerequisite = value" as a target-specific
+	// assignment of prerequisite, and rejects the following tab line with
+	// "recipe commences before first target", so the parser must not report
+	// a rule here.
 	makefile := `
 target: prerequisite = value
 	@echo "rule with equals"
@@ -267,12 +271,8 @@ target: prerequisite = value
 	ret, err := Parse(tmp)
 	require.NoError(t, err)
 
-	require.Len(t, ret.Rules, 1)
-	assert.Equal(t, "target", ret.Rules[0].Target)
-	assert.Equal(t, []string{"prerequisite", "=", "value"}, ret.Rules[0].Dependencies)
-
-	require.Len(t, ret.Rules[0].Body, 1)
-	assert.Equal(t, "@echo \"rule with equals\"", ret.Rules[0].Body[0])
+	assert.Empty(t, ret.Rules)
+	assert.Empty(t, ret.Variables)
 }
 
 func TestParse_OtherVariableAssignments(t *testing.T) {
@@ -379,4 +379,125 @@ func TestParse_LineContinuationCollapsesSurroundingWhitespace(t *testing.T) {
 
 	require.Len(t, ret.Variables, 1)
 	assert.Equal(t, "left right", ret.Variables[0].Assignment)
+}
+
+func TestParse_TargetSpecificVariables(t *testing.T) {
+	t.Parallel()
+	ret, err := Parse("../fixtures/target_specific_variables.make")
+	require.NoError(t, err)
+
+	rulesByTarget := map[string][]Rule{}
+	for _, rule := range ret.Rules {
+		rulesByTarget[rule.Target] = append(rulesByTarget[rule.Target], rule)
+	}
+
+	poetry := rulesByTarget["poetry-publish-test"]
+	require.Len(t, poetry, 1, "target-specific variable lines must not create extra rules")
+	assert.Equal(t, []string{"build"}, poetry[0].Dependencies)
+	assert.Equal(t, []string{`@echo "Published $(ARTIFACT_VERSION) to $(PUBLISH_SOURCE)"`}, poetry[0].Body)
+
+	buildO := rulesByTarget["build.o"]
+	require.Len(t, buildO, 1, "target-specific variable lines must not create extra rules")
+	assert.Equal(t, []string{"build.c"}, buildO[0].Dependencies)
+	assert.Equal(t, []string{"cc $(CFLAGS) -c build.c"}, buildO[0].Body)
+
+	_, hasPattern := rulesByTarget["%.o"]
+	assert.False(t, hasPattern, "pattern-specific variable assignments must not create rules")
+	_, hasProg := rulesByTarget["prog"]
+	assert.False(t, hasProg, "target-specific variable assignments must not create rules")
+
+	foo, ok := rulesByTarget["foo"]
+	require.True(t, ok, "inline-recipe rules must still be parsed")
+	require.Len(t, foo, 1)
+	assert.Empty(t, foo[0].Dependencies)
+	assert.Equal(t, []string{"echo a=b"}, foo[0].Body)
+
+	bar, ok := rulesByTarget["bar"]
+	require.True(t, ok, "rules with normal dependencies must still be parsed")
+	require.Len(t, bar, 1)
+	assert.Equal(t, []string{"baz"}, bar[0].Dependencies)
+	assert.Equal(t, []string{"echo hello"}, bar[0].Body)
+
+	assert.Empty(t, ret.Variables, "target-specific assignments must not be stored as global variables")
+}
+
+func TestParse_TargetSpecificVariableForms(t *testing.T) {
+	t.Parallel()
+	forms := []struct {
+		name string
+		line string
+	}{
+		{name: "recursive", line: "tgt: VAR=$(VALUE)"},
+		{name: "spaced-recursive", line: "tgt: VAR = value"},
+		{name: "simple", line: "tgt: VAR := value"},
+		{name: "simple-two-colons", line: "tgt: VAR ::= value"},
+		{name: "simple-three-colons", line: "tgt: VAR :::= value"},
+		{name: "conditional", line: "tgt: VAR ?= value"},
+		{name: "append", line: "build.o: CFLAGS += -O2"},
+		{name: "shell", line: "tgt: VAR != echo hi"},
+		{name: "export", line: "prog: export PATH = /bin"},
+		{name: "unexport", line: "prog: unexport PATH = /bin"},
+		{name: "override", line: "%.o: override CFLAGS ?= -g"},
+		{name: "private", line: "prog: private PATH := /bin"},
+		{name: "multiple-modifiers", line: "prog: private export PATH ::= /bin"},
+	}
+
+	for _, form := range forms {
+		t.Run(form.name, func(t *testing.T) {
+			t.Parallel()
+			tmp := writeTempMakefile(t, form.line+"\n")
+			defer os.Remove(tmp)
+
+			ret, err := Parse(tmp)
+			require.NoError(t, err)
+			assert.Empty(t, ret.Rules, "target-specific variable line %q must not create a rule", form.line)
+			assert.Empty(t, ret.Variables, "target-specific variable line %q must not create a global variable", form.line)
+		})
+	}
+}
+
+func TestParse_TargetSpecificVariablesLeaveOtherSyntaxAlone(t *testing.T) {
+	t.Parallel()
+	makefile := "" +
+		"VAR := x\n" +
+		"VAR2 ::= y\n" +
+		"COND ?= z\n" +
+		"APPEND += a\n" +
+		"SHELLV != echo hi\n" +
+		"tgt: CFLAGS += -O2\n" +
+		"tgt: dep\n" +
+		"\techo ok\n" +
+		"foo: ; echo a=b\n" +
+		"double:: dep\n" +
+		"\techo dc\n"
+	tmp := writeTempMakefile(t, makefile)
+	defer os.Remove(tmp)
+
+	ret, err := Parse(tmp)
+	require.NoError(t, err)
+
+	vars := make(map[string]Variable)
+	for _, v := range ret.Variables {
+		vars[v.Name] = v
+	}
+	require.Contains(t, vars, "VAR")
+	assert.True(t, vars["VAR"].SimplyExpanded)
+	assert.Equal(t, "x", vars["VAR"].Assignment)
+	require.Contains(t, vars, "VAR2")
+	assert.Equal(t, "y", vars["VAR2"].Assignment)
+	require.Contains(t, vars, "COND")
+	require.Contains(t, vars, "APPEND")
+	require.Contains(t, vars, "SHELLV")
+
+	require.Len(t, ret.Rules, 3)
+	assert.Equal(t, "tgt", ret.Rules[0].Target)
+	assert.Equal(t, []string{"dep"}, ret.Rules[0].Dependencies)
+	assert.Equal(t, []string{"echo ok"}, ret.Rules[0].Body)
+
+	assert.Equal(t, "foo", ret.Rules[1].Target)
+	assert.Empty(t, ret.Rules[1].Dependencies)
+	assert.Equal(t, []string{"echo a=b"}, ret.Rules[1].Body)
+
+	assert.Equal(t, "double", ret.Rules[2].Target)
+	assert.Equal(t, []string{"echo dc"}, ret.Rules[2].Body)
 }

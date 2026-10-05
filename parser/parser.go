@@ -53,6 +53,20 @@ var (
 	//        by ensuring that ':' is not immediately followed by '='.
 	reFindRule = regexp.MustCompile(`^([A-Za-z0-9_.%/\-$(){}\s]+)\s*:(\s*[^=].*)?$`)
 
+	// reFindTargetSpecificVariable matches a target-specific or pattern-specific
+	// variable assignment:
+	//
+	//	<targets> : [export|unexport|override|private]... <name> <op> <value>
+	//
+	// <targets> uses the same character set as reFindRule. <op> is one of
+	// =, :=, ::=, :::=, ?=, +=, or !=. A single colon separates the targets
+	// from the assignment, so double-colon rules (foo:: bar) do not match.
+	// These lines are not rules and are not global variables.
+	reFindTargetSpecificVariable = regexp.MustCompile(`^([A-Za-z0-9_.%/\-$(){}\s]+)\s*:` +
+		`(?:\s*(?:export|unexport|override|private)\b)*\s*` +
+		`[A-Za-z0-9_.-]+\s*` +
+		`(?::::=|::=|:=|[?+!]=|=)`)
+
 	// reFindRuleBody captures a line belonging to a rule's recipe.
 	// It must start with a tab.
 	// Group 1: The command to be executed.
@@ -228,6 +242,16 @@ func parseRuleOrVariable(scanner *MakefileScanner) (ret interface{}, err error) 
 			FileName:       scanner.FileHandle.Name(),
 			LineNumber:     startLineNumber,
 		}
+		scanner.Scan()
+		return
+	}
+
+	// Target-specific variable assignments look like rules to reFindRule
+	// (target: NAME = value) but are not rules. Do not record them as
+	// variables either: Variable has no target, and other rules would treat
+	// the name as a global.
+	if reFindTargetSpecificVariable.MatchString(line) {
+		logger.Debug(fmt.Sprintf("Skipping target-specific variable assignment '%s'", line))
 		scanner.Scan()
 		return
 	}
