@@ -105,6 +105,7 @@ Variant for using an additional config file:
 docker run --workdir / -v "$PWD"/Makefile:/Makefile -v "$PWD"/checkmake.ini:/checkmake.ini  quay.io/checkmake/checkmake:latest
 ```
 Note that this uses the default config file name `checkmake.ini` in the CWD so that it will be picked up by checkmake automatically.
+A hidden `.checkmake.ini` is picked up the same way, and both names are also looked up in your home directory.
 
 
 
