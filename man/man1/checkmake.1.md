@@ -87,7 +87,8 @@ configurable rules being run against a Makefile or a set of `\*.mk` files.
 
 # CONFIGURATION
 By default checkmake looks for a `checkmake.ini` file in the same
-folder it's executed in, and then as fallback in `~/checkmake.ini`.
+folder it's executed in, then for a hidden `.checkmake.ini` in that folder,
+and then as fallback for `~/checkmake.ini` and `~/.checkmake.ini`.
 This can be overridden by passing the `--config=` argument pointing it
 to a different configuration file. With the configuration file the
 `[default]` section is for checkmake itself while sections named after

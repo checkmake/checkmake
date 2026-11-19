@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -334,4 +335,155 @@ func TestCheckmake_FormatAndOutputAreMutuallyExclusive(t *testing.T) {
 	// "if any flags in the group [format output] are set none of the others can be; [format output] were all set"
 	assert.Contains(t, errorOutput, "[format output]", "should reference the conflicting flags")
 	assert.Contains(t, errorOutput, "can be", "should mention that flags cannot be set together")
+}
+
+func TestConfigCandidates(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		home string
+		want []string
+	}{
+		{
+			name: "default name tries the hidden variant and the home directory",
+			path: "checkmake.ini",
+			home: "/home/me",
+			want: []string{
+				"checkmake.ini",
+				".checkmake.ini",
+				"/home/me/checkmake.ini",
+				"/home/me/.checkmake.ini",
+			},
+		},
+		{
+			name: "explicit path keeps only the home fallbacks",
+			path: "custom.ini",
+			home: "/home/me",
+			want: []string{"custom.ini", "/home/me/checkmake.ini", "/home/me/.checkmake.ini"},
+		},
+		{
+			name: "no home directory",
+			path: "checkmake.ini",
+			home: "",
+			want: []string{"checkmake.ini", ".checkmake.ini"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := configCandidates(tt.path, tt.home)
+			// Compare as slash paths so the test also holds on Windows.
+			for i := range got {
+				got[i] = filepath.ToSlash(got[i])
+			}
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestResolveConfigPath(t *testing.T) {
+	touch := func(t *testing.T, path string) {
+		t.Helper()
+		require.NoError(t, os.WriteFile(path, []byte("[maxbodylength]\n"), 0o600))
+	}
+
+	t.Run("visible file wins over the hidden one", func(t *testing.T) {
+		cwd, home := t.TempDir(), t.TempDir()
+		t.Chdir(cwd)
+		touch(t, "checkmake.ini")
+		touch(t, ".checkmake.ini")
+
+		got, err := resolveConfigPath("checkmake.ini", home)
+		require.NoError(t, err)
+		assert.Equal(t, "checkmake.ini", got)
+	})
+
+	t.Run("hidden file in the current directory", func(t *testing.T) {
+		cwd, home := t.TempDir(), t.TempDir()
+		t.Chdir(cwd)
+		touch(t, ".checkmake.ini")
+		touch(t, filepath.Join(home, "checkmake.ini"))
+
+		got, err := resolveConfigPath("checkmake.ini", home)
+		require.NoError(t, err)
+		assert.Equal(t, ".checkmake.ini", got)
+	})
+
+	t.Run("hidden file in the home directory", func(t *testing.T) {
+		cwd, home := t.TempDir(), t.TempDir()
+		t.Chdir(cwd)
+		touch(t, filepath.Join(home, ".checkmake.ini"))
+
+		got, err := resolveConfigPath("checkmake.ini", home)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, ".checkmake.ini"), got)
+	})
+
+	t.Run("visible home file wins over the hidden home file", func(t *testing.T) {
+		cwd, home := t.TempDir(), t.TempDir()
+		t.Chdir(cwd)
+		touch(t, filepath.Join(home, "checkmake.ini"))
+		touch(t, filepath.Join(home, ".checkmake.ini"))
+
+		got, err := resolveConfigPath("checkmake.ini", home)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, "checkmake.ini"), got)
+	})
+
+	t.Run("an explicit path does not pick up the hidden file in the current directory", func(t *testing.T) {
+		cwd, home := t.TempDir(), t.TempDir()
+		t.Chdir(cwd)
+		touch(t, ".checkmake.ini")
+
+		got, err := resolveConfigPath("missing.ini", home)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, "checkmake.ini"), got)
+	})
+
+	t.Run("an existing explicit path is used as is", func(t *testing.T) {
+		cwd, home := t.TempDir(), t.TempDir()
+		t.Chdir(cwd)
+		touch(t, "custom.ini")
+		touch(t, filepath.Join(home, "checkmake.ini"))
+
+		got, err := resolveConfigPath("custom.ini", home)
+		require.NoError(t, err)
+		assert.Equal(t, "custom.ini", got)
+	})
+
+	t.Run("nothing found falls back to the home path", func(t *testing.T) {
+		cwd, home := t.TempDir(), t.TempDir()
+		t.Chdir(cwd)
+
+		got, err := resolveConfigPath("checkmake.ini", home)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(home, "checkmake.ini"), got)
+	})
+
+	t.Run("other stat errors are reported", func(t *testing.T) {
+		cwd, home := t.TempDir(), t.TempDir()
+		t.Chdir(cwd)
+		touch(t, "not-a-dir")
+
+		_, err := resolveConfigPath(filepath.Join("not-a-dir", "checkmake.ini"), home)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "error accessing config file")
+	})
+}
+
+func TestCheckmake_PicksUpHiddenConfigFile(t *testing.T) {
+	cwd, home := t.TempDir(), t.TempDir()
+	t.Setenv("HOME", home)
+	t.Chdir(cwd)
+	require.NoError(t, os.WriteFile(".checkmake.ini", []byte("[maxbodylength]\nmaxBodyLength = 3\n"), 0o600))
+
+	cmd := newRootCmd()
+	cmd.SetArgs([]string{"list-rules"})
+
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+
+	require.NoError(t, cmd.Execute())
+	assert.Regexp(t, `3\s+lines`, buf.String(), "maxBodyLength from .checkmake.ini should be used")
 }

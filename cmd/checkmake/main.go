@@ -49,7 +49,7 @@ func newRootCmd() *cobra.Command {
 	}
 
 	cmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug mode")
-	cmd.PersistentFlags().StringVar(&cfgPath, "config", "checkmake.ini", "Configuration file to read")
+	cmd.PersistentFlags().StringVar(&cfgPath, "config", defaultConfigPath, "Configuration file to read")
 	cmd.PersistentFlags().StringVar(&format, "format", "", "Custom Go template for text output (ignored in JSON mode)")
 	cmd.PersistentFlags().StringVarP(&output, "output", "o", "text", "Output format: 'text' (default) or 'json' (mutually exclusive with --format)")
 	cmd.MarkFlagsMutuallyExclusive("format", "output")
@@ -70,20 +70,54 @@ func newRootCmd() *cobra.Command {
 	return cmd
 }
 
+// defaultConfigPath is the name of the config file that checkmake picks up
+// when no --config flag is given.
+const defaultConfigPath = "checkmake.ini"
+
+// configCandidates returns the config files to try, in order of priority. The
+// hidden variant of the default name is accepted next to the visible one, both
+// in the current directory and in the home directory.
+func configCandidates(path, home string) []string {
+	candidates := []string{path}
+	if path == defaultConfigPath {
+		candidates = append(candidates, "."+defaultConfigPath)
+	}
+	if home != "" {
+		candidates = append(candidates,
+			filepath.Join(home, defaultConfigPath),
+			filepath.Join(home, "."+defaultConfigPath),
+		)
+	}
+	return candidates
+}
+
+// resolveConfigPath returns the first existing file out of configCandidates. If
+// none of them exists it returns the global fallback in the home directory, so
+// that the caller reports a missing config in the same way as before.
+func resolveConfigPath(path, home string) (string, error) {
+	for _, candidate := range configCandidates(path, home) {
+		_, err := os.Stat(candidate)
+		if err == nil {
+			return candidate, nil
+		}
+		if !os.IsNotExist(err) {
+			return "", fmt.Errorf("error accessing config file %q: %w", candidate, err)
+		}
+	}
+	return filepath.Join(home, defaultConfigPath), nil
+}
+
 func loadConfig() *config.Config {
 	if debug {
 		logger.SetLogLevel(logger.DebugLevel)
 	}
 
-	if _, err := os.Stat(cfgPath); err != nil {
-		if os.IsNotExist(err) {
-			home := os.Getenv("HOME")
-			cfgPath = filepath.Join(home, "checkmake.ini")
-		} else {
-			logger.Error(fmt.Sprintf("error accessing config file %q: %v", cfgPath, err))
-			return &config.Config{}
-		}
+	resolved, err := resolveConfigPath(cfgPath, os.Getenv("HOME"))
+	if err != nil {
+		logger.Error(err.Error())
+		return &config.Config{}
 	}
+	cfgPath = resolved
 
 	cfg, cfgError := config.NewConfigFromFile(cfgPath)
 	if cfgError != nil {
